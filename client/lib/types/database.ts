@@ -169,6 +169,167 @@ export type Database = {
           }
         ]
       }
+      datainstances: {
+        Row: {
+          id: string
+          pet_id: string
+          content: string
+          content_type: string
+          content_hash: string
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          pet_id: string
+          content: string
+          content_type: string
+          content_hash: string
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          pet_id?: string
+          content?: string
+          content_type?: string
+          content_hash?: string
+          metadata?: Json
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "datainstances_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pets"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      knowledge: {
+        Row: {
+          id: string
+          url: string
+          content: string
+          title: string | null
+          content_hash: string
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          url: string
+          content: string
+          title?: string | null
+          content_hash: string
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          url?: string
+          content?: string
+          title?: string | null
+          content_hash?: string
+          metadata?: Json
+          created_at?: string
+        }
+        Relationships: []
+      }
+      images: {
+        Row: {
+          id: string
+          image_url: string
+          alt_text: string | null
+          url_hash: string
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          image_url: string
+          alt_text?: string | null
+          url_hash: string
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          image_url?: string
+          alt_text?: string | null
+          url_hash?: string
+          metadata?: Json
+          created_at?: string
+        }
+        Relationships: []
+      }
+      datainstance_knowledge: {
+        Row: {
+          datainstance_id: string
+          knowledge_id: string
+          created_at: string
+        }
+        Insert: {
+          datainstance_id: string
+          knowledge_id: string
+          created_at?: string
+        }
+        Update: {
+          datainstance_id?: string
+          knowledge_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "datainstance_knowledge_datainstance_id_fkey"
+            columns: ["datainstance_id"]
+            isOneToOne: false
+            referencedRelation: "datainstances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "datainstance_knowledge_knowledge_id_fkey"
+            columns: ["knowledge_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      datainstance_images: {
+        Row: {
+          datainstance_id: string
+          image_id: string
+          created_at: string
+        }
+        Insert: {
+          datainstance_id: string
+          image_id: string
+          created_at?: string
+        }
+        Update: {
+          datainstance_id?: string
+          image_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "datainstance_images_datainstance_id_fkey"
+            columns: ["datainstance_id"]
+            isOneToOne: false
+            referencedRelation: "datainstances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "datainstance_images_image_id_fkey"
+            columns: ["image_id"]
+            isOneToOne: false
+            referencedRelation: "images"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
