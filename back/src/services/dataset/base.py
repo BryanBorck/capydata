@@ -35,10 +35,10 @@ class DataPack:
     # Conversions -------------------------------------------------------
     # ------------------------------------------------------------------
 
-    def to_dataframe(self) -> pd.DataFrame:  # noqa: D401
+    def to_dataframe(self) -> pd.DataFrame:
         return pd.DataFrame(self._records)
 
-    def export(self, *, fmt: DataExportFormat, path: str | Path) -> Path:  # noqa: D401
+    def export(self, *, fmt: DataExportFormat, path: str | Path) -> Path: 
         """Materialise the pack on disk in the requested *fmt*."""
         df = self.to_dataframe()
         path = Path(path)
@@ -49,8 +49,8 @@ class DataPack:
                 df.to_csv(path, index=False)
             case DataExportFormat.HF:
                 try:
-                    import datasets as hf_datasets  # type: ignore
-                except ImportError as exc:  # pragma: no cover
+                    import datasets as hf_datasets  
+                except ImportError as exc: 
                     raise RuntimeError("`datasets` package not installed") from exc
                 dset = hf_datasets.Dataset.from_pandas(df)
                 dset.save_to_disk(str(path))

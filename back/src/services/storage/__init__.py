@@ -1,7 +1,5 @@
-from .base import StorageBackend
-from .filecoin import FilecoinStorage
+from .supabase import Supabase
 
 __all__ = [
-    "StorageBackend",
-    "FilecoinStorage",
+    "Supabase",
 ] 

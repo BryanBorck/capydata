@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
 
-class StorageBackend(ABC):
+class Database(ABC):
     """Abstract base class for any persistent storage layer used by Datagotchi.
 
     Concrete implementations should take care of persisting and retrieving binary data
@@ -40,7 +40,7 @@ class StorageBackend(ABC):
     # --------------------------------------------------------------------
 
 
-class LocalFileSystemStorage(StorageBackend):
+class LocalFileSystemStorage(Database):
     """Simple implementation backed by the local filesystem (mainly for dev/tests)."""
 
     def __init__(self, base_path: str | Path):

@@ -1,14 +1,14 @@
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, HttpUrl
-
-from src.api.scraper.notte import NotteScraper
+from typing import Optional
+from src.scraper.notte import NotteScraper
 
 router = APIRouter(prefix="/scraper", tags=["Scraper"])
 
 
 class ScrapeRequest(BaseModel):
     url: HttpUrl
-    instruction: str
+    instruction: Optional[str] = None
 
 
 class ScrapeResponse(BaseModel):
@@ -28,11 +28,11 @@ async def scrape_endpoint(payload: ScrapeRequest):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(exc),
-        ) from exc
+        ) 
 
     return result
 
-@router.post("/scrape/twitter")
+@router.post("/twitter")
 async def scrape_twitter_endpoint(payload: ScrapeRequest):
     """Scrape a twitter post using Notte and return the structured data."""
 
@@ -42,6 +42,6 @@ async def scrape_twitter_endpoint(payload: ScrapeRequest):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(exc),
-        ) from exc
+        )
 
     return result

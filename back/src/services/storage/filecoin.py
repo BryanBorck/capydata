@@ -7,10 +7,10 @@ from typing import Any
 # Here we merely sketch the interface so that the rest of the app can remain
 # implementation-agnostic.
 
-from .base import StorageBackend
+from .base import Database
 
 
-class FilecoinStorage(StorageBackend):
+class FilecoinStorage(Database):
     """Stub implementation that should be replaced by a real Filecoin integration."""
 
     def __init__(self, gateway_url: str | None = None, api_token: str | None = None):
@@ -22,7 +22,6 @@ class FilecoinStorage(StorageBackend):
     # ------------------------------------------------------------------
 
     def write(self, data: bytes, *, path: str) -> str:  # noqa: D401
-        # TODO: Replace with real implementation.
         # For now we simply raise so that the caller is aware this is a stub.
         raise NotImplementedError("FilecoinStorage.write() is not yet implemented")
 

@@ -27,3 +27,4 @@ class ImageProvider:
     def generate_image(self, prompt: str) -> FileResponse:
         """Generate an image from a prompt."""
         pass
+    
