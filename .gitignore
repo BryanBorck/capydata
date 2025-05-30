@@ -1,0 +1,10 @@
+*.env
+*.parquet
+*.csv
+*.hf
+*.jsonl
+*.jsonl.gz
+*__pycache__
+poetry.lock
+*node_modules
+*.next
