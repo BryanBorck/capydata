@@ -141,8 +141,9 @@ export default function LoginPage() {
   const handleTestNewUser = async () => {
     setAuthLoading(true);
     try {
-      const walletAddress = 'test_wallet_new_user';
-      const username = 'TestNewUser';
+      const timestamp = Date.now();
+      const walletAddress = `0x1234567890123456789012345678901234567890`;
+      const username = `TestNewUser_${timestamp}`;
       
       await login(walletAddress, username);
       
@@ -221,8 +222,8 @@ export default function LoginPage() {
       </div>
 
       {/* Decorative circles - separate positioning */}
-      <div className="absolute -bottom-24 -right-16 w-[36rem] h-[28rem] bg-violet-500 rounded-full z-3"></div>
-      <div className="absolute -bottom-36 -right-16 w-96 h-96 bg-yellow-500 rounded-full z-4"></div>
+      <div className="absolute -bottom-20 -right-8 w-[32rem] h-[28rem] bg-violet-500 rounded-full z-3"></div>
+      <div className="absolute -bottom-36 -right-12 w-[22rem] h-[22rem] bg-yellow-500 rounded-full z-4"></div>
       
       <div className="flex flex-col items-center justify-center text-center w-full mb-32 z-10">
         <AnimatedShinyText
