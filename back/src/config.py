@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Allowed environments where we want the interactive docs to be shown
-SHOW_DOCS_ENVIRONMENT = {"development", "local"}
+SHOW_DOCS_ENVIRONMENT = {"development", "staging", "production", "local"}
 
 
 class Settings(BaseSettings):
@@ -25,8 +25,17 @@ class Settings(BaseSettings):
 
     # API KEYS
     NOTTE_API_KEY: str | None = Field(None, env="NOTTE_API_KEY")
+    
+    # Supabase configuration (optional for backend)
+    supabase_url: str | None = Field(None, env="SUPABASE_URL")
+    supabase_key: str | None = Field(None, env="SUPABASE_KEY")
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=False)
+    model_config = SettingsConfigDict(
+        env_file=".env", 
+        env_file_encoding="utf-8", 
+        case_sensitive=False,
+        extra="ignore"  # Allow extra environment variables to be ignored
+    )
 
 
 @lru_cache()
