@@ -4,12 +4,11 @@ steps:
     args:
       [
         "build",
-        "-f",
-        "back/Dockerfile",
         "-t",
         "gcr.io/zap-mas-451218/datagotchi-backend:staging-$COMMIT_SHA",
-        "back/",
+        ".",
       ]
+    dir: "back"
 
   # Push the container image to Container Registry
   - name: "gcr.io/cloud-builders/docker"
