@@ -37,13 +37,19 @@ const alexBrush = Alex_Brush({
   variable: "--font-alex-brush",
 });
 
+const silkscreen = Silkscreen({
+  weight: ["400", "700"], // Both available weights
+  subsets: ["latin"],
+  variable: "--font-silkscreen", // Custom CSS variable
+});
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`light ${geistSans.variable} ${geistMono.variable} ${alexBrush.variable}`}>
+    <html lang="en" className={`light ${geistSans.variable} ${geistMono.variable} ${alexBrush.variable} ${silkscreen.variable}`}>
       <body
         className={`bg-white text-gray-900 antialiased w-full min-h-screen overflow-x-hidden`}
       >
