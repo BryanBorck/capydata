@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { MiniKit } from "@worldcoin/minikit-js";
 import { APP_NAME } from "@/lib/constants";
 import { useUser } from "@/providers/user-provider";
+import Image from "next/image";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -164,7 +165,7 @@ export default function LoginPage() {
 
   if (isLoading && !isTestMode) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-8 lg:p-12 bg-gradient-to-br from-slate-50 to-gray-100">
+      <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-8 lg:p-12 bg-gradient-to-br from-slate-50 to-gray-100 overflow-hidden">
         <div className="flex flex-col items-center justify-center text-center">
           <svg
             className="animate-spin h-10 w-10 text-slate-700"
@@ -195,35 +196,46 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-[100dvh] flex-col items-center justify-center bg-gradient-to-br from-gray-50 via-slate-50 to-zinc-100 p-6">
+    <main className="flex min-h-[100dvh] flex-col items-center justify-center p-6 overflow-hidden relative">
       <FlickeringGrid
         className="absolute inset-0 z-0 h-full w-full [mask-image:radial-gradient(1200px_circle_at_center,transparent,white)]"
-        squareSize={4}
+        squareSize={5}
         gridGap={6}
         color="#6B7280"
-        maxOpacity={0.5}
-        flickerChance={0.1}
+        maxOpacity={0.7}
+        flickerChance={0.2}
       />
+
+      <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-gray-50 via-slate-50 to-zinc-100 -z-1"></div>
       
-      <div className="flex flex-col items-center justify-center text-center max-w-md mx-auto z-10">
+      {/* Capybara Image - Bottom Right */}
+      <div className="absolute bottom-0 right-0 z-5 overflow-hidden">
+        <Image
+          src="/capybara/home.png"
+          alt="Capybara"
+          width={200}
+          height={200}
+          className="w-96 h-96 object-contain transform translate-x-8 translate-y-12"
+          priority
+        />
+      </div>
+
+      {/* Decorative circles - separate positioning */}
+      <div className="absolute -bottom-24 -right-16 w-[36rem] h-[28rem] bg-violet-500 rounded-full z-3"></div>
+      <div className="absolute -bottom-36 -right-16 w-96 h-96 bg-yellow-500 rounded-full z-4"></div>
+      
+      <div className="flex flex-col items-center justify-center text-center w-full mb-32 z-10">
         <AnimatedShinyText
-          className="inline-flex text-6xl mb-6 items-center justify-center px-4 py-1 transition ease-out hover:text-neutral-600 hover:duration-300 hover:dark:text-neutral-400"
+          className="inline-flex geist-sans uppercase text-6xl mb-4 items-center justify-center px-4 py-1 transition ease-out hover:text-neutral-600 hover:duration-300 hover:dark:text-neutral-400"
         >
           <span>{APP_NAME}</span>
         </AnimatedShinyText>
 
-        <div className="text-xl mb-8 text-neutral-600">
+        <div className="text-4xl mb-8 text-violet-600 font-alex-brush">
           Your digital companion awaits
         </div>
 
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl p-8 border border-gray-200 shadow-lg">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Welcome!</h2>
-          <p className="text-gray-600 mb-6">
-            {isTestMode 
-              ? "Choose how you'd like to start your Datagotchi journey"
-              : "Connect your World wallet to start your Datagotchi journey"
-            }
-          </p>
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl p-8 w-full border border-gray-200 shadow-lg">
 
           <div className="space-y-3">
             {/* World Wallet Authentication Button */}
@@ -231,7 +243,7 @@ export default function LoginPage() {
               <Button
                 onClick={handleConnectWallet}
                 disabled={authLoading}
-                className="w-full py-3 font-medium"
+                className="w-full py-4 h-12 font-medium text-md uppercase bg-violet-500 hover:bg-violet-700"
               >
                 {authLoading ? (
                   <>
@@ -290,6 +302,7 @@ export default function LoginPage() {
             )}
 
             {/* Direct Create Pet Button (always available) */}
+            {isTestMode && (
             <Button
               onClick={handleDirectCreatePet}
               disabled={authLoading}
@@ -299,6 +312,7 @@ export default function LoginPage() {
               <Plus className="h-5 w-5 mr-2" />
               <span>Create Pet Directly</span>
             </Button>
+            )}
 
             {/* Test Mode Indicator */}
             {isTestMode && (
@@ -311,7 +325,21 @@ export default function LoginPage() {
                 </p>
               </div>
             )}
+
+
+            <p className="text-sm text-gray-500 mt-4">
+              <span className="font-bold">Disclaimer:</span> Current beta capybaras
+            </p>
           </div>
+        </div>
+      </div>
+      
+      {/* Made in EthPrague Badge */}
+      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20">
+        <div className="bg-white/30 backdrop-blur-sm px-3 py-1 rounded-full border border-white/30">
+          <p className="text-xs text-violet-600 font-medium">
+            made in EthPrague
+          </p>
         </div>
       </div>
       
