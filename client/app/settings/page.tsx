@@ -2,27 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AnimatedShinyText } from "@/components/magicui/animated-shiny-text";
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { useUser } from "@/providers/user-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowLeft } from "lucide-react";
+import { useUser } from "@/providers/user-provider";
+import { ArrowLeft, User, Trophy, Settings as SettingsIcon, LogOut, Trash2, Gamepad2, Database } from "lucide-react";
+import { APP_NAME } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 export default function SettingsPage() {
-  const [isEditing, setIsEditing] = useState(false);
-  const [username, setUsername] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  
   const router = useRouter();
-  const { user, isAuthenticated, pets, logout, refreshUserData } = useUser();
+  const { user, isAuthenticated, pets, logout, deleteAccount } = useUser();
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -30,13 +21,6 @@ export default function SettingsPage() {
       router.push('/login');
     }
   }, [isAuthenticated, router]);
-
-  // Initialize username when user data loads
-  useEffect(() => {
-    if (user) {
-      setUsername(user.username || '');
-    }
-  }, [user]);
 
   const handleLogout = async () => {
     try {
@@ -50,12 +34,23 @@ export default function SettingsPage() {
 
   const handleDeleteAccount = async () => {
     try {
-      // This would need to be implemented in the backend
-      toast.error("Account deletion not implemented yet");
+      await deleteAccount();
+      toast.success('Account deleted successfully');
       setShowDeleteDialog(false);
+      router.push('/login');
     } catch (error) {
       console.error('Error deleting account:', error);
-      toast.error('Failed to delete account');
+      toast.error('Failed to delete account. Please try again.');
+    }
+  };
+
+  const getRarityColor = (rarity: string) => {
+    switch (rarity?.toLowerCase()) {
+      case 'common': return 'bg-gray-100 border-gray-600 text-gray-800';
+      case 'rare': return 'bg-blue-100 border-blue-600 text-blue-800';
+      case 'epic': return 'bg-purple-100 border-purple-600 text-purple-800';
+      case 'legendary': return 'bg-yellow-100 border-yellow-600 text-yellow-800';
+      default: return 'bg-gray-100 border-gray-600 text-gray-800';
     }
   };
 
@@ -64,232 +59,277 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="flex min-h-[100dvh] w-full flex-col items-center overflow-hidden relative">
+    <main className="h-[100dvh] w-full relative overflow-hidden pb-16">
+      {/* Flickering Grid Background */}
       <FlickeringGrid
-        className="absolute inset-0 z-0 h-full w-full [mask-image:radial-gradient(1200px_circle_at_center,transparent,white)]"
+        className="absolute inset-0 -z-5 h-full w-full [mask-image:radial-gradient(1200px_circle_at_center,transparent,white)]"
         squareSize={4}
-        gridGap={5}
+        gridGap={6}
         color="#6B7280"
-        maxOpacity={0.3}
+        maxOpacity={0.5}
         flickerChance={0.1}
       />
-      
-      {/* Header */}
-      <header className="relative w-full z-10 h-16 flex items-center justify-center bg-white/60 backdrop-blur-sm border-b border-gray-200/60 shadow-sm">
-        <div className="absolute left-3 h-8 w-8 bg-violet-500 rounded-full flex items-center justify-center cursor-pointer" onClick={() => router.push('/home')}>
-          <ArrowLeft className="h-4 w-4 text-white" />
+
+      {/* Top Header Bar */}
+      <header className="relative z-10 px-3 py-2 bg-gradient-to-r from-violet-500 to-violet-600 border-1 border-violet-800 shadow-[1px_1px_0_#581c87]">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => router.push('/home')}
+            className="font-silkscreen text-xs font-bold text-white uppercase bg-violet-700 border-2 border-violet-900 shadow-[2px_2px_0_#581c87] px-3 py-1 hover:bg-violet-600 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#581c87] transition-all flex items-center gap-2"
+          >
+            <ArrowLeft className="h-3 w-3" />
+            BACK
+          </button>
+          
+          <div className="font-silkscreen text-sm font-bold text-white uppercase tracking-wider drop-shadow-lg">
+            {APP_NAME} - SETTINGS
+          </div>
+          
+          <div className="w-16"></div> {/* Spacer for balance */}
         </div>
-        <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xl font-bold text-gray-700">Settings</div>
       </header>
 
-      {/* Content */}
-      <main className="w-full mx-auto p-4 space-y-6">
+      {/* Main Content */}
+      <div className="relative z-10 h-full overflow-y-auto px-6 py-8">
         <div className="max-w-4xl mx-auto space-y-6">
-          {/* User Profile Card */}
-          <Card className="bg-white/80 backdrop-blur-sm border border-gray-200 shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <span>User Profile</span>
-              </CardTitle>
-              <CardDescription>
-                Your account information and wallet details
-              </CardDescription>
-            </CardHeader>
-            
-            <CardContent className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
-                {/* <Avatar className="h-20 w-20 mx-auto sm:mx-0">
-                  <AvatarFallback className="bg-blue-500 text-white text-2xl">
-                    {user?.username?.charAt(0).toUpperCase() || '?'}
-                  </AvatarFallback>
-                </Avatar> */}
-                
-                <div className="text-center sm:text-left flex-1 min-w-0">
-                  <div className="text-lg font-bold text-gray-800 truncate">
-                    {user?.username || 'Anonymous User'}
+          
+          {/* User Profile Section */}
+          <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-6">
+            <div className="mb-6">
+              <div className="font-silkscreen text-xl font-bold text-gray-800 uppercase mb-2 flex items-center gap-3">
+                <User className="h-6 w-6" />
+                USER PROFILE
+              </div>
+              <div className="font-silkscreen text-xs text-gray-600 uppercase">
+                ACCOUNT INFORMATION
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <div className="font-silkscreen text-sm font-bold text-gray-800 uppercase mb-2">
+                    USERNAME
                   </div>
-                  <p className="text-sm text-gray-600 mb-2">
-                    Joined {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'Recently'}
-                  </p>
-                  <div className="bg-gray-100 rounded-lg p-3 mt-4">
-                    <p className="text-xs text-gray-600 mb-1">Wallet Address</p>
-                    <p className="text-sm font-mono text-gray-800 break-all">
-                      {user?.wallet_address || 'Not connected'}
-                    </p>
+                  <div className="bg-gray-100 border-2 border-gray-600 shadow-[2px_2px_0_#374151] p-3">
+                    <div className="font-silkscreen text-sm font-bold text-gray-800 uppercase">
+                      {user?.username || 'ANONYMOUS USER'}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="font-silkscreen text-sm font-bold text-gray-800 uppercase mb-2">
+                    JOINED DATE
+                  </div>
+                  <div className="bg-gray-100 border-2 border-gray-600 shadow-[2px_2px_0_#374151] p-3">
+                    <div className="font-silkscreen text-sm font-bold text-gray-800 uppercase">
+                      {user?.created_at ? new Date(user.created_at).toLocaleDateString().toUpperCase() : 'RECENTLY'}
+                    </div>
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+
+              <div>
+                <div className="font-silkscreen text-sm font-bold text-gray-800 uppercase mb-2">
+                  WALLET ADDRESS
+                </div>
+                <div className="bg-gray-100 border-2 border-gray-600 shadow-[2px_2px_0_#374151] p-3">
+                  <div className="font-mono text-xs text-gray-800 break-all">
+                    {user?.wallet_address || 'NOT CONNECTED'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Account Statistics */}
-          <Card className="bg-white/80 backdrop-blur-sm border border-gray-200 shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <span>Account Statistics</span>
-              </CardTitle>
-              <CardDescription>
-                Your activity and achievements overview
-              </CardDescription>
-            </CardHeader>
-            
-            <CardContent>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="text-center bg-blue-50 rounded-lg p-4 border border-blue-200">
-                  <div className="text-xl font-bold text-blue-600">{pets.length}</div>
-                  <div className="text-sm text-gray-600">Pet{pets.length !== 1 ? 's' : ''}</div>
+          <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-6">
+            <div className="mb-6">
+              <div className="font-silkscreen text-xl font-bold text-gray-800 uppercase mb-2 flex items-center gap-3">
+                <Trophy className="h-6 w-6" />
+                STATISTICS
+              </div>
+              <div className="font-silkscreen text-xs text-gray-600 uppercase">
+                YOUR ACTIVITY OVERVIEW
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-blue-100 border-4 border-blue-600 shadow-[4px_4px_0_#1e3a8a] p-4 text-center">
+                <div className="font-silkscreen text-2xl font-bold text-blue-800 uppercase mb-1">
+                  {pets.length}
                 </div>
-                
-                <div className="text-center bg-green-50 rounded-lg p-4 border border-green-200">
-                  <div className="text-xl font-bold text-green-600">0</div>
-                  <div className="text-sm text-gray-600">Data Fed</div>
-                </div>
-                
-                <div className="text-center bg-purple-50 rounded-lg p-4 border border-purple-200">
-                  <div className="text-xl font-bold text-purple-600">0</div>
-                  <div className="text-sm text-gray-600">Games Played</div>
-                </div>
-                
-                <div className="text-center bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-                  <div className="text-xl font-bold text-yellow-600">
-                    {Math.floor(pets.reduce((sum, pet) => sum + pet.health + pet.strength + pet.social, 0) / pets.length) || 0}
-                  </div>
-                  <div className="text-sm text-gray-600">Avg Total Stats</div>
+                <div className="font-silkscreen text-xs font-bold text-blue-700 uppercase">
+                  PET{pets.length !== 1 ? 'S' : ''}
                 </div>
               </div>
-            </CardContent>
-          </Card>
+              
+              <div className="bg-green-100 border-4 border-green-600 shadow-[4px_4px_0_#14532d] p-4 text-center">
+                <div className="font-silkscreen text-2xl font-bold text-green-800 uppercase mb-1">
+                  0
+                </div>
+                <div className="font-silkscreen text-xs font-bold text-green-700 uppercase">
+                  DATA FED
+                </div>
+              </div>
+              
+              <div className="bg-purple-100 border-4 border-purple-600 shadow-[4px_4px_0_#581c87] p-4 text-center">
+                <div className="font-silkscreen text-2xl font-bold text-purple-800 uppercase mb-1">
+                  0
+                </div>
+                <div className="font-silkscreen text-xs font-bold text-purple-700 uppercase">
+                  GAMES
+                </div>
+              </div>
+              
+              <div className="bg-yellow-100 border-4 border-yellow-600 shadow-[4px_4px_0_#92400e] p-4 text-center">
+                <div className="font-silkscreen text-2xl font-bold text-yellow-800 uppercase mb-1">
+                  {Math.floor(pets.reduce((sum, pet) => sum + (pet.social || 0) + (pet.trivia || 0) + (pet.science || 0) + (pet.code || 0) + (pet.trenches || 0), 0) / pets.length) || 0}
+                </div>
+                <div className="font-silkscreen text-xs font-bold text-yellow-700 uppercase">
+                  AVG STATS
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Pet Collection */}
-          <Card className="bg-white/80 backdrop-blur-sm border border-gray-200 shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <span>Pet Collection</span>
-              </CardTitle>
-              <CardDescription>
-                Overview of all your digital companions
-              </CardDescription>
-            </CardHeader>
-            
-            <CardContent>
-              {pets.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {pets.map((pet) => (
-                    <div key={pet.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="font-semibold text-gray-800 truncate">{pet.name}</div>
-                        <Badge 
-                          variant="secondary" 
-                          className={`text-xs ${
-                            pet.rarity === 'legendary' ? 'bg-yellow-100 text-yellow-700' :
-                            pet.rarity === 'epic' ? 'bg-purple-100 text-purple-700' :
-                            pet.rarity === 'rare' ? 'bg-blue-100 text-blue-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}
-                        >
-                          {pet.rarity}
-                        </Badge>
-                      </div>
-                      
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-gray-600">Health:</span>
-                          <span className="font-medium">{pet.health}</span>
-                        </div>                
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-xs">
-                            <span className="text-gray-600">Trivia:</span>
-                            <span className="font-medium">{pet.trivia}/100</span>
-                          </div>
-                          <div className="flex justify-between text-xs">
-                            <span className="text-gray-600">Streak:</span>
-                            <span className="font-medium">{pet.streak}/100</span>
-                          </div>
-                          <div className="flex justify-between text-xs">
-                            <span className="text-gray-600">Social:</span>
-                            <span className="font-medium">{pet.social}/100</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <p className="text-xs text-gray-500 mt-2">
-                        Born {new Date(pet.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-base text-gray-600">No pets yet</p>
-                  <p className="text-sm text-gray-500 mt-1">Go home to create your first pet!</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-6">
+            <div className="mb-6">
+              <div className="font-silkscreen text-xl font-bold text-gray-800 uppercase mb-2 flex items-center gap-3">
+                <Gamepad2 className="h-6 w-6" />
+                PET COLLECTION
+              </div>
+              <div className="font-silkscreen text-xs text-gray-600 uppercase">
+                ALL YOUR DIGITAL COMPANIONS
+              </div>
+            </div>
 
-          {/* Dangerous Actions */}
-          <Card className="bg-white/80 backdrop-blur-sm border border-red-200 shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2 text-red-600">
-                <span>Account Actions</span>
-              </CardTitle>
-              <CardDescription className="text-red-600">
-                Logout or permanently delete your account
-              </CardDescription>
-            </CardHeader>
-            
-            <CardContent className="space-y-4">
-              <Button
-                variant="outline"
+            {pets.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {pets.map((pet) => (
+                  <div key={pet.id} className="bg-gray-100 border-4 border-gray-600 shadow-[4px_4px_0_#374151] p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="font-silkscreen text-sm font-bold text-gray-800 uppercase truncate">
+                        {pet.name}
+                      </div>
+                      <div className={cn(
+                        "font-silkscreen text-xs font-bold uppercase px-2 py-1 border-2",
+                        getRarityColor(pet.rarity)
+                      )}>
+                        {pet.rarity}
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="font-silkscreen text-xs text-gray-600 uppercase">SOCIAL:</span>
+                        <span className="font-silkscreen text-xs font-bold text-gray-800">{pet.social || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-silkscreen text-xs text-gray-600 uppercase">TRIVIA:</span>
+                        <span className="font-silkscreen text-xs font-bold text-gray-800">{pet.trivia || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-silkscreen text-xs text-gray-600 uppercase">SCIENCE:</span>
+                        <span className="font-silkscreen text-xs font-bold text-gray-800">{pet.science || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-silkscreen text-xs text-gray-600 uppercase">CODE:</span>
+                        <span className="font-silkscreen text-xs font-bold text-gray-800">{pet.code || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-silkscreen text-xs text-gray-600 uppercase">TRENCHES:</span>
+                        <span className="font-silkscreen text-xs font-bold text-gray-800">{pet.trenches || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-silkscreen text-xs text-gray-600 uppercase">STREAK:</span>
+                        <span className="font-silkscreen text-xs font-bold text-gray-800">{pet.streak || 0}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="font-silkscreen text-xs text-gray-500 uppercase mt-3 pt-2 border-t-2 border-gray-500">
+                      BORN {new Date(pet.created_at).toLocaleDateString().toUpperCase()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="font-silkscreen text-lg font-bold text-gray-600 uppercase mb-2">
+                  NO PETS YET
+                </div>
+                <div className="font-silkscreen text-sm text-gray-500 uppercase">
+                  GO HOME TO CREATE YOUR FIRST PET!
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Account Actions */}
+          <div className="bg-white border-4 border-red-600 shadow-[8px_8px_0_#dc2626] p-6">
+            <div className="mb-6">
+              <div className="font-silkscreen text-xl font-bold text-red-800 uppercase mb-2 flex items-center gap-3">
+                <SettingsIcon className="h-6 w-6" />
+                DANGER ZONE
+              </div>
+              <div className="font-silkscreen text-xs text-red-600 uppercase">
+                LOGOUT OR DELETE ACCOUNT
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <button
                 onClick={handleLogout}
-                className="w-full justify-center border-red-200 text-red-600 hover:bg-red-50"
+                className="font-silkscreen w-full h-12 text-white text-sm font-bold uppercase bg-gray-500 border-4 border-gray-700 shadow-[4px_4px_0_#374151] px-6 py-2 hover:bg-gray-300 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0_#374151] transition-all flex items-center justify-center gap-2"
               >
-                Logout
-              </Button>
+                <LogOut className="h-4 w-4" />
+                LOGOUT
+              </button>
               
-              <Button
-                variant="destructive"
+              <button
                 onClick={() => setShowDeleteDialog(true)}
-                className="w-full justify-center"
+                className="font-silkscreen w-full h-12 text-white text-sm font-bold uppercase bg-red-500 border-4 border-red-700 shadow-[4px_4px_0_#991b1b] px-6 py-2 hover:bg-red-300 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0_#991b1b] transition-all flex items-center justify-center gap-2"
               >
-                Delete Account
-              </Button>
-            </CardContent>
-          </Card>
+                <Trash2 className="h-4 w-4" />
+                DELETE ACCOUNT
+              </button>
+            </div>
+          </div>
         </div>
-      </main>
-      
-      {/* Simple Delete Confirmation */}
+      </div>
+
+      {/* Delete Confirmation Dialog */}
       {showDeleteDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <div className="text-lg font-semibold text-gray-800 mb-2">
-              Are you absolutely sure?
+          <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-6 max-w-md w-full">
+            <div className="font-silkscreen text-lg font-bold text-gray-800 uppercase mb-4">
+              ARE YOU ABSOLUTELY SURE?
             </div>
-            <p className="text-sm text-gray-600 mb-4">
-              This action cannot be undone. This will permanently delete your account
-              and remove all your data, including your pets, from our servers.
-            </p>
-            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-              <Button
-                variant="outline"
+            <div className="font-silkscreen text-sm text-gray-600 uppercase mb-6 leading-relaxed">
+              THIS ACTION CANNOT BE UNDONE. THIS WILL PERMANENTLY DELETE YOUR ACCOUNT
+              AND REMOVE ALL YOUR DATA, INCLUDING YOUR PETS, FROM OUR SERVERS.
+            </div>
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
+              <button
                 onClick={() => setShowDeleteDialog(false)}
-                className="flex-1"
+                className="font-silkscreen flex-1 h-10 text-gray-800 text-sm font-bold uppercase bg-gray-300 border-4 border-gray-600 shadow-[4px_4px_0_#374151] px-4 py-2 hover:bg-gray-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0_#374151] transition-all"
               >
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
+                CANCEL
+              </button>
+              <button
                 onClick={handleDeleteAccount}
-                className="flex-1"
+                className="font-silkscreen flex-1 h-10 text-white text-sm font-bold uppercase bg-red-500 border-4 border-red-700 shadow-[4px_4px_0_#991b1b] px-4 py-2 hover:bg-red-300 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0_#991b1b] transition-all"
               >
-                Delete Account
-              </Button>
+                DELETE ACCOUNT
+              </button>
             </div>
           </div>
         </div>
       )}
       
       <Toaster />
-    </div>
+    </main>
   );
 } 

@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono, DM_Mono, Rubik, Sora, Alex_Brush } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono, DM_Mono, Alex_Brush, Silkscreen } from "next/font/google";
 import "@/assets/css/globals.css";
 import { AppProviders } from "@/providers";
 
@@ -17,6 +17,13 @@ export const metadata: Metadata = {
   title: "Datagotchi",
   description: "Datagotchi",
 };
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+}
 
 const dmMono = DM_Mono({
   weight: ["400"],

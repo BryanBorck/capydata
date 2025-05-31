@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Wallet, Loader2, Plus, TestTube } from "lucide-react";
+import { Wallet, Loader2, Plus, TestTube, Settings } from "lucide-react";
 import { AnimatedShinyText } from "@/components/magicui/animated-shiny-text";
-import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
@@ -12,6 +11,7 @@ import { MiniKit } from "@worldcoin/minikit-js";
 import { APP_NAME } from "@/lib/constants";
 import { useUser } from "@/providers/user-provider";
 import Image from "next/image";
+import { cn } from "@/lib/utils";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -142,7 +142,7 @@ export default function LoginPage() {
     setAuthLoading(true);
     try {
       const timestamp = Date.now();
-      const walletAddress = `0x1234567890123456789012345678901234567123`;
+      const walletAddress = `0x1234567890123456789012345671201234567123`;
       const username = `TestNewUser_${timestamp}`;
       
       await login(walletAddress, username);
@@ -166,181 +166,201 @@ export default function LoginPage() {
 
   if (isLoading && !isTestMode) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-8 lg:p-12 bg-gradient-to-br from-slate-50 to-gray-100 overflow-hidden">
-        <div className="flex flex-col items-center justify-center text-center">
-          <svg
-            className="animate-spin h-10 w-10 text-slate-700"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            ></circle>
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-          </svg>
-          <p className="mt-4 text-lg font-medium text-slate-700">
+      <main className="h-[100dvh] w-full relative overflow-hidden bg-gradient-to-br from-violet-500 to-violet-700">
+        {/* Background */}
+        <div className="absolute inset-0 z-0">
+          <Image
+            src="/background/forest.png"
+            alt="Background"
+            fill
+            className="object-cover"
+            priority
+            quality={90}
+          />
+          <div className="absolute inset-0 bg-black/30" />
+        </div>
+        
+        <div className="relative z-10 flex flex-col items-center justify-center h-full text-center">
+          {/* Pixelized Loading Spinner */}
+          <div className="mb-6 relative">
+            <div className="w-16 h-16 bg-white border-4 border-gray-800 shadow-[4px_4px_0_#374151] animate-pulse">
+              <div className="w-full h-full bg-gradient-to-br from-violet-400 to-violet-600"></div>
+            </div>
+          </div>
+          <div className="font-silkscreen text-xl font-bold text-white uppercase tracking-wider drop-shadow-lg">
             Loading MiniKit...
-          </p>
+          </div>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="flex min-h-[100dvh] flex-col items-center justify-center p-6 overflow-hidden relative">
-      <FlickeringGrid
-        className="absolute inset-0 z-0 h-full w-full [mask-image:radial-gradient(1200px_circle_at_center,transparent,white)]"
-        squareSize={5}
-        gridGap={6}
-        color="#6B7280"
-        maxOpacity={0.7}
-        flickerChance={0.2}
-      />
-
-      <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-gray-50 via-slate-50 to-zinc-100 -z-1"></div>
-      
-      {/* Capybara Image - Bottom Right */}
-      <div className="absolute bottom-0 right-0 z-5 overflow-hidden">
+    <main className="h-[100dvh] w-full relative overflow-hidden">
+      {/* Forest Background */}
+      <div className="absolute inset-0 z-0">
         <Image
-          src="/capybara/home.png"
-          alt="Capybara"
-          width={200}
-          height={200}
-          className="w-96 h-96 object-contain transform translate-x-8 translate-y-12"
+          src="/background/forest.png"
+          alt="Background"
+          fill
+          className="object-cover"
           priority
+          quality={90}
         />
+        {/* Overlay for better contrast */}
+        <div className="absolute inset-0 bg-black/20" />
       </div>
 
-      {/* Decorative circles - separate positioning */}
-      <div className="absolute -bottom-20 -right-8 w-[32rem] h-[28rem] bg-violet-500 rounded-full z-3"></div>
-      <div className="absolute -bottom-36 -right-12 w-[22rem] h-[22rem] bg-yellow-500 rounded-full z-4"></div>
-      
-      <div className="flex flex-col items-center justify-center text-center w-full mb-32 z-10">
-        <AnimatedShinyText
-          className="inline-flex geist-sans uppercase text-5xl mb-4 items-center justify-center px-4 py-1 transition ease-out hover:text-neutral-600 hover:duration-300 hover:dark:text-neutral-400"
-        >
-          <span>{APP_NAME}</span>
-        </AnimatedShinyText>
+      {/* Top Header Bar */}
+      <header className="relative z-10 px-3 py-2 bg-gradient-to-r from-violet-500 to-violet-600 border-1 border-violet-800 shadow-[1px_1px_0_#581c87]">
+        <div className="flex items-center justify-center">
+          <div className="font-silkscreen text-sm font-bold text-white uppercase tracking-wider drop-shadow-lg">
+            {APP_NAME}
+          </div>
+        </div>
+      </header>
 
-        <div className="text-4xl mb-8 text-violet-600 font-alex-brush">
-          Your digital companion awaits
+      {/* Main Content */}
+      <div className="relative z-10 flex flex-col items-center justify-center h-full px-6 pb-32">
+        
+        {/* Title */}
+        <div className="text-center mb-8">
+          <div className="font-silkscreen text-4xl font-bold text-white uppercase tracking-wider drop-shadow-lg mb-2">
+            CAPYDATA
+          </div>
+          <div className="font-silkscreen text-sm text-white/90 uppercase tracking-wide drop-shadow-md">
+            EARN AND LEARN ABOUT YOURSELF WITH AI
+          </div>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl p-8 w-full border border-gray-200 shadow-lg">
-
-          <div className="space-y-3">
+        {/* Login Card */}
+        <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-6 w-full max-w-md">
+          <div className="space-y-4">
             {/* World Wallet Authentication Button */}
             {!isTestMode && (
-              <Button
+              <button
                 onClick={handleConnectWallet}
                 disabled={authLoading}
-                className="w-full py-4 h-12 font-medium text-md uppercase bg-violet-500 hover:bg-violet-700"
+                className={cn(
+                  "font-silkscreen w-full h-14 text-white text-sm font-bold uppercase bg-violet-500 border-4 border-violet-700 shadow-[4px_4px_0_#4c1d95] px-6 py-2 transition-all flex items-center justify-center gap-3",
+                  authLoading
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:bg-violet-300 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0_#4c1d95]"
+                )}
               >
                 {authLoading ? (
                   <>
-                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                    <span>Connecting...</span>
+                    <span>CONNECTING...</span>
                   </>
                 ) : (
                   <>
-                    <Wallet className="h-5 w-5 mr-2" />
-                    <span>Connect World Wallet</span>
+                    <Wallet className="h-5 w-5" />
+                    <span>CONNECT WORLD WALLET</span>
                   </>
                 )}
-              </Button>
+              </button>
             )}
 
             {/* Test Mode Buttons */}
             {isTestMode && (
               <>
-                <Button
+                <button
                   onClick={handleTestWithData}
                   disabled={authLoading}
-                  className="w-full py-3 font-medium bg-green-600 hover:bg-green-700"
+                  className={cn(
+                    "font-silkscreen w-full h-14 text-white text-sm font-bold uppercase bg-green-500 border-4 border-green-700 shadow-[4px_4px_0_#14532d] px-6 py-2 transition-all flex items-center justify-center gap-3",
+                    authLoading
+                      ? "opacity-50 cursor-not-allowed"
+                      : "hover:bg-green-300 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0_#14532d]"
+                  )}
                 >
                   {authLoading ? (
                     <>
-                      <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                      <span>Loading...</span>
+                      <span>LOADING...</span>
                     </>
                   ) : (
                     <>
-                      <TestTube className="h-5 w-5 mr-2" />
-                      <span>Test with Existing Pet</span>
+                      <TestTube className="h-5 w-5" />
+                      <span>TEST WITH EXISTING PET</span>
                     </>
                   )}
-                </Button>
+                </button>
 
-                <Button
+                <button
                   onClick={handleTestNewUser}
                   disabled={authLoading}
-                  variant="outline"
-                  className="w-full py-3 font-medium"
+                  className={cn(
+                    "font-silkscreen w-full h-14 text-gray-800 text-sm font-bold uppercase bg-white border-4 border-gray-700 shadow-[4px_4px_0_#374151] px-6 py-2 transition-all flex items-center justify-center gap-3",
+                    authLoading
+                      ? "opacity-50 cursor-not-allowed"
+                      : "hover:bg-gray-100 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0_#374151]"
+                  )}
                 >
                   {authLoading ? (
                     <>
-                      <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                      <span>Loading...</span>
+                      <span>LOADING...</span>
                     </>
                   ) : (
                     <>
-                      <Wallet className="h-5 w-5 mr-2" />
-                      <span>Test as New User</span>
+                      <Wallet className="h-5 w-5" />
+                      <span>TEST AS NEW USER</span>
                     </>
                   )}
-                </Button>
-              </>
-            )}
+                </button>
 
-            {/* Direct Create Pet Button (always available) */}
-            {isTestMode && (
-            <Button
-              onClick={handleDirectCreatePet}
-              disabled={authLoading}
-              variant="secondary"
-              className="w-full py-3 font-medium"
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              <span>Create Pet Directly</span>
-            </Button>
+                <button
+                  onClick={handleDirectCreatePet}
+                  disabled={authLoading}
+                  className={cn(
+                    "font-silkscreen w-full h-14 text-white text-sm font-bold uppercase bg-yellow-500 border-4 border-yellow-700 shadow-[4px_4px_0_#92400e] px-6 py-2 transition-all flex items-center justify-center gap-3",
+                    authLoading
+                      ? "opacity-50 cursor-not-allowed"
+                      : "hover:bg-yellow-300 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0_#92400e]"
+                  )}
+                >
+                  <Plus className="h-5 w-5" />
+                  <span>CREATE PET DIRECTLY</span>
+                </button>
+              </>
             )}
 
             {/* Test Mode Indicator */}
             {isTestMode && (
-              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-sm text-yellow-800 font-medium">
-                  🧪 Test Mode Active
-                </p>
-                <p className="text-xs text-yellow-700 mt-1">
-                  MiniKit authentication is disabled
-                </p>
+              <div className="bg-yellow-300 border-4 border-yellow-600 shadow-[4px_4px_0_#92400e] p-4">
+                <div className="font-silkscreen text-sm font-bold text-yellow-800 uppercase mb-1">
+                  🧪 TEST MODE ACTIVE
+                </div>
+                <div className="font-silkscreen text-xs text-yellow-700 uppercase">
+                  MINIKIT AUTHENTICATION DISABLED
+                </div>
               </div>
             )}
 
-
-            <p className="text-sm text-gray-500 mt-4">
-              <span className="font-bold">Disclaimer:</span> Current beta capybaras
-            </p>
+            <div className="font-silkscreen text-xs text-center text-gray-600 uppercase mt-4">
+              <span className="font-bold">DISCLAIMER:</span> CURRENT BETA CAPYBARAS
+            </div>
           </div>
+        </div>
+
+        {/* Capybara Image */}
+        <div className="absolute bottom-20 right-4 z-5">
+          <Image
+            src="/capybara/common/default.png"
+            alt="Capybara"
+            width={200}
+            height={200}
+            className="w-64 h-64 object-contain drop-shadow-2xl"
+            priority
+          />
         </div>
       </div>
       
       {/* Made in EthPrague Badge */}
       <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20">
-        <div className="bg-white/30 backdrop-blur-sm px-3 py-1 rounded-full border border-white/30">
-          <p className="text-xs text-violet-600 font-medium">
-            made in EthPrague
-          </p>
+        <div className="bg-white border-2 border-gray-800 shadow-[2px_2px_0_#374151] px-4 py-2">
+          <div className="font-silkscreen text-xs text-violet-600 font-bold uppercase">
+            MADE IN ETHPRAGUE
+          </div>
         </div>
       </div>
       

@@ -27,7 +27,13 @@ export async function getPetById(petId: string) {
   return data
 }
 
-export async function createPet(walletAddress: string, name: string, rarity: string = 'common') {
+export async function createPet(
+  walletAddress: string, 
+  name: string, 
+  rarity: string = 'common',
+  variant: string = 'default',
+  background: string = 'forest'
+) {
   const stats = getRarityStats(rarity)
   
   const social = 0
@@ -35,7 +41,7 @@ export async function createPet(walletAddress: string, name: string, rarity: str
   const science = 0
   const code = 0
   const trenches = 0
-  const streak = 0 // Start with 0 streak
+  const streak = 0
 
   const { data, error } = await supabase
     .from('pets')
@@ -43,6 +49,8 @@ export async function createPet(walletAddress: string, name: string, rarity: str
       owner_wallet: walletAddress,
       name,
       rarity,
+      variant,     // Uncommented to save variant
+      background,  // Uncommented to save background
       social,
       trivia,
       science,
@@ -105,7 +113,12 @@ function getRarityStats(rarity: string) {
 }
 
 // Helper to create a pet with random stats
-export async function createRandomPet(walletAddress: string, name?: string) {
+export async function createRandomPet(
+  walletAddress: string, 
+  name?: string, 
+  variant?: string, 
+  background?: string
+) {
   const rarities: ('common' | 'rare' | 'epic' | 'legendary')[] = ['common', 'rare', 'epic', 'legendary']
   const weights = [70, 20, 8, 2] // Percentage chance for each rarity
   
@@ -122,5 +135,11 @@ export async function createRandomPet(walletAddress: string, name?: string) {
     }
   }
 
-  return createPet(walletAddress, name || 'Gotchi', rarity)
+  return createPet(
+    walletAddress, 
+    name || 'Gotchi', 
+    rarity,
+    variant || 'default',
+    background || 'forest'
+  )
 } 

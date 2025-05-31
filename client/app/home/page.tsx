@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Database, Gamepad2, Settings, Heart, Zap, Users, PawPrint, BarChart3, Brain, CheckCircle, Code, SearchCheck } from "lucide-react";
+import { Plus, Database, Settings, Heart, Zap, Users, PawPrint, BarChart3, Brain, Sword, Beaker, Code, Flame, Gamepad2 } from "lucide-react";
 import { AnimatedShinyText } from "@/components/magicui/animated-shiny-text";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,116 @@ import { useUser } from "@/providers/user-provider";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { APP_NAME } from "@/lib/constants";
+
+// Loading skeleton component
+const ImageSkeleton = ({ className }: { className?: string }) => (
+  <div className={cn("animate-pulse bg-gray-200 flex items-center justify-center", className)}>
+    <div className="w-8 h-8 border-4 border-gray-300 border-t-transparent animate-spin"></div>
+  </div>
+)
+
+// Lazy loaded image component for backgrounds
+const LazyBackgroundImage = ({ 
+  src, 
+  alt, 
+  className = "",
+  priority = false
+}: { 
+  src: string
+  alt: string
+  className?: string
+  priority?: boolean
+}) => {
+  const [isLoading, setIsLoading] = useState(true)
+  const [hasError, setHasError] = useState(false)
+
+  return (
+    <>
+      {isLoading && <ImageSkeleton className="absolute inset-0" />}
+      
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        className={cn(
+          "object-cover",
+          className,
+          isLoading ? "opacity-0" : "opacity-100 transition-opacity duration-500"
+        )}
+        onLoad={() => setIsLoading(false)}
+        onError={() => {
+          setIsLoading(false)
+          setHasError(true)
+        }}
+        priority={priority}
+        quality={90}
+      />
+      
+      {hasError && !isLoading && (
+        <div className="absolute inset-0 bg-gray-300 flex items-center justify-center">
+          <div className="text-gray-600 text-xs font-silkscreen uppercase">
+            BACKGROUND FAILED
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+// Lazy loaded image component for capybaras
+const LazyCapybaraImage = ({ 
+  src, 
+  alt, 
+  width,
+  height,
+  className = "",
+  priority = false
+}: { 
+  src: string
+  alt: string
+  width: number
+  height: number
+  className?: string
+  priority?: boolean
+}) => {
+  const [isLoading, setIsLoading] = useState(true)
+  const [hasError, setHasError] = useState(false)
+
+  return (
+    <div className="relative">
+      {isLoading && (
+        <ImageSkeleton className={cn("absolute inset-0", className)} />
+      )}
+      
+      <Image
+        src={src}
+        alt={alt}
+        width={width}
+        height={height}
+        className={cn(
+          "object-contain drop-shadow-2xl transition-all duration-500",
+          className,
+          isLoading ? "opacity-0" : "opacity-100"
+        )}
+        onLoad={() => setIsLoading(false)}
+        onError={() => {
+          setIsLoading(false)
+          setHasError(true)
+        }}
+        priority={priority}
+      />
+      
+      {hasError && !isLoading && (
+        <div className={cn("absolute inset-0 bg-gray-200 flex items-center justify-center", className)}>
+          <div className="text-gray-600 text-xs font-silkscreen uppercase text-center">
+            CAPYBARA<br/>FAILED
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function HomePage() {
   const router = useRouter();
@@ -96,47 +206,50 @@ export default function HomePage() {
     }
   };
 
-  const getCapybaraImage = (rarity: string): string => {
-    switch (rarity?.toLowerCase()) {
-      case 'common':
-        return "/capybara/common/default.png";
-      case 'rare':
-        return "/capybara/common/default.png";
-      case 'epic':
-        return "/capybara/common/default.png";
-      case 'legendary':
-        return "/capybara/common/default.png";
+  const getCapybaraImage = (variant: string): string => {
+    // Use the variant from the pet data
+    switch (variant?.toLowerCase()) {
+      case 'default':
+        return "/capybara/variants/default-capybara.png";
+      case 'pink':
+        return "/capybara/variants/pink-capybara.png";
+      case 'blue':
+        return "/capybara/variants/blue-capybara.png";
+      case 'ice':
+        return "/capybara/variants/ice-capybara.png";
+      case 'black':
+        return "/capybara/variants/black-capybara.png";
       default:
-        return "/capybara/common/default.png";
+        return "/capybara/variants/default-capybara.png";
     }
   };
 
-  const getBackgroundImage = (rarity: string): string => {
-    switch (rarity?.toLowerCase()) {
-      case 'common':
-        return "/background/forest.png";
-      case 'rare':
-        return "/background/forest.png"; // For now, using same background
-      case 'epic':
-        return "/background/forest.png"; // For now, using same background
-      case 'legendary':
-        return "/background/forest.png"; // For now, using same background
+  const getBackgroundImage = (background: string): string => {
+    // Use the background from the pet data
+    switch (background?.toLowerCase()) {
+      case 'forest':
+        return "/background/variants/forest.png";
+      case 'lake':
+        return "/background/variants/lake.png";
+      case 'ice':
+        return "/background/variants/ice.png";
+      case 'farm':
+        return "/background/variants/farm.png";
+      case 'beach':
+        return "/background/variants/beach.png";
       default:
-        return "/background/forest.png";
+        return "/background/variants/forest.png";
     }
   };
 
   return (
     <main className="h-[100dvh] w-full relative overflow-hidden">
-      {/* Forest Background */}
+      {/* Background */}
       <div className="absolute inset-0 z-0">
-        <Image
-          src={selectedPet ? getBackgroundImage(selectedPet.rarity) : "/background/forest.png"}
+        <LazyBackgroundImage
+          src={selectedPet ? getBackgroundImage(selectedPet.background) : "/background/variants/forest.png"}
           alt="Background"
-          fill
-          className="object-cover"
-          priority
-          quality={90}
+          priority={true}
         />
         {/* Optional overlay for better contrast */}
         <div className="absolute inset-0 bg-black/10" />
@@ -153,15 +266,10 @@ export default function HomePage() {
           </div>
 
           {/* Center: User Info Badge - Absolutely positioned to be perfectly centered */}
-          <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center space-x-2 bg-white/50 backdrop-blur-sm px-4 py-1 rounded-full border border-white/60 shadow-md">
-            <Avatar className="h-5 w-5">
-              <AvatarFallback className="bg-gradient-to-r from-violet-400 to-violet-600 text-white text-xs">
-                {user?.username?.charAt(0).toUpperCase() || '?'}
-              </AvatarFallback>
-            </Avatar>
-            <div className="text-xs">
-              <div className="font-medium text-gray-700">{user?.username}</div>
-              <div className="text-gray-500 text-[10px]">{pets.length} pets</div>
+          <div onClick={() => router.push('/select-pet')} className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center space-x-2 bg-white border-2 border-gray-800 shadow-[2px_2px_0_#374151] px-4 py-1">
+            <div className="font-silkscreen text-xs flex flex-col items-center justify-center">
+              <div className="font-bold text-gray-800">{user?.username}</div>
+              <div className="text-gray-600 text-[10px]">{pets.length} pets</div>
             </div>
           </div>
 
@@ -211,52 +319,52 @@ export default function HomePage() {
           
           {/* Skills */}
           <div className="flex flex-col space-y-1 w-full pt-2">
-            {/* Social */}
-            <div className="flex items-center justify-end space-x-2 bg-white/90 backdrop-blur-sm pr-2 rounded-full w-fit">
-              <div className="flex items-center justify-center rounded-full bg-blue-100 p-1">
-                <Users className="h-5 w-5 text-blue-600" />
-              </div>
-              <span className="text-base font-bold text-blue-700 w-[3ch] text-right">{selectedPet.social}</span>
-            </div>
-
-            {/* Trivia */}
-            <div className="flex items-center justify-end space-x-2 bg-white/90 backdrop-blur-sm pr-2 rounded-full w-fit">
-              <div className="flex items-center justify-center rounded-full bg-purple-100 p-1">
-                <Brain className="h-5 w-5 text-purple-600" />
-              </div>
-              <span className="text-base font-bold text-purple-700 w-[3ch] text-right">{selectedPet.trivia}</span>
-            </div>
-
             {/* Science */}
             <div className="flex items-center justify-end space-x-2 bg-white/90 backdrop-blur-sm pr-2 rounded-full w-fit">
-              <div className="flex items-center justify-center rounded-full bg-green-100 p-1">
-                <Zap className="h-5 w-5 text-green-600" />
+              <div className="flex items-center justify-center bg-green-500 border-2 border-green-700 shadow-[2px_2px_0_#14532d] p-1">
+                <Beaker className="h-5 w-5 text-white" />
               </div>
-              <span className="text-base font-bold text-green-700 w-[3ch] text-right">{selectedPet.science}</span>
+              <span className="font-silkscreen text-base font-bold text-green-700 w-[3ch] text-right">{selectedPet.science}</span>
             </div>
 
             {/* Code */}
             <div className="flex items-center justify-end space-x-2 bg-white/90 backdrop-blur-sm pr-2 rounded-full w-fit">
-              <div className="flex items-center justify-center rounded-full bg-indigo-100 p-1">
-                <Code className="h-5 w-5 text-indigo-600" />
+              <div className="flex items-center justify-center bg-blue-500 border-2 border-blue-700 shadow-[2px_2px_0_#1e40af] p-1">
+                <Code className="h-5 w-5 text-white" />
               </div>
-              <span className="text-base font-bold text-indigo-700 w-[3ch] text-right">{selectedPet.code}</span>
-            </div>
-
-            {/* Trenches */}
-            <div className="flex items-center justify-end space-x-2 bg-white/90 backdrop-blur-sm pr-2 rounded-full w-fit">
-              <div className="flex items-center justify-center rounded-full bg-orange-100 p-1">
-                <SearchCheck className="h-5 w-5 text-orange-600" />
-              </div>
-              <span className="text-base font-bold text-orange-700 w-[3ch] text-right">{selectedPet.trenches}</span>
+              <span className="font-silkscreen text-base font-bold text-blue-700 w-[3ch] text-right">{selectedPet.code}</span>
             </div>
 
             {/* Streak */}
             <div className="flex items-center justify-end space-x-2 bg-white/90 backdrop-blur-sm pr-2 rounded-full w-fit">
-              <div className="flex items-center justify-center rounded-full bg-red-100 p-1">
-                <Zap className="h-5 w-5 text-red-600" />
+              <div className="flex items-center justify-center bg-violet-500 border-2 border-violet-700 shadow-[2px_2px_0_#4c1d95] p-1">
+                <Users className="h-5 w-5 text-white" />
               </div>
-              <span className="text-base font-bold text-red-700 w-[3ch] text-right">{selectedPet.streak}</span>
+              <span className="font-silkscreen text-base font-bold text-violet-700 w-[3ch] text-right">{selectedPet.social}</span>
+            </div>
+
+            {/* Trivia */}
+            <div className="flex items-center justify-end space-x-2 bg-white/90 backdrop-blur-sm pr-2 rounded-full w-fit">
+              <div className="flex items-center justify-center bg-yellow-500 border-2 border-yellow-700 shadow-[2px_2px_0_#92400e] p-1">
+                <Brain className="h-5 w-5 text-white" />
+              </div>
+              <span className="font-silkscreen text-base font-bold text-yellow-700 w-[3ch] text-right">{selectedPet.trivia}</span>
+            </div>
+
+            {/* Trenches */}
+            <div className="flex items-center justify-end space-x-2 bg-white/90 backdrop-blur-sm pr-2 rounded-full w-fit">
+              <div className="flex items-center justify-center bg-red-500 border-2 border-red-700 shadow-[2px_2px_0_#991b1b] p-1">
+                <Sword className="h-5 w-5 text-white" />
+              </div>
+              <span className="font-silkscreen text-base font-bold text-red-700 w-[3ch] text-right">{selectedPet.trenches}</span>
+            </div>
+
+            {/* Streak */}
+            <div className="flex items-center justify-end space-x-2 bg-white/90 backdrop-blur-sm pr-2 rounded-full w-fit">
+              <div className="flex items-center justify-center bg-orange-500 border-2 border-orange-700 shadow-[2px_2px_0_#9a3412] p-1">
+                <Flame className="h-5 w-5 text-white" />
+              </div>
+              <span className="font-silkscreen text-base font-bold text-orange-700 w-[3ch] text-right">{selectedPet.streak}</span>
             </div>
           </div>
         </div>
@@ -264,14 +372,14 @@ export default function HomePage() {
 
       {/* Pet Image - Positioned relative to whole screen */}
       {selectedPet && (
-        <div className="absolute bottom-28 left-1/2 transform -translate-x-1/2 z-10">
-          <Image
-            src={getCapybaraImage(selectedPet.rarity)}
+        <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-10">
+          <LazyCapybaraImage
+            src={getCapybaraImage(selectedPet.variant)}
             alt={selectedPet.name}
             width={300}
             height={300}
-            className="w-96 h-96 object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-300"
-            priority
+            className="w-96 h-96 transition-transform duration-300"
+            priority={true}
           />
         </div>
       )}
@@ -296,7 +404,7 @@ export default function HomePage() {
           onClick={() => selectedPet && router.push("/data-insights")}
           disabled={!selectedPet}
           className={cn(
-            "absolute bottom-24 left-4 transform w-28 h-10 flex flex-row items-center justify-center space-x-1 text-white border-0 shadow-lg transition-all hover:scale-105 rounded-xl text-base bg-violet-500 hover:bg-violet-600",
+            "font-silkscreen w-36 h-12 text-white text-md font-bold uppercase bg-violet-500 border-4 border-violet-700 shadow-[4px_4px_0_#4c1d95] px-6 py-2 hover:bg-violet-300 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0_#4c1d95] transition-all flex flex-col justify-center items-center gap-2",
             !selectedPet && "opacity-50 cursor-not-allowed"
           )}
         >
@@ -309,7 +417,7 @@ export default function HomePage() {
           onClick={() => selectedPet && router.push("/play-game")}
           disabled={!selectedPet}
           className={cn(
-            "absolute bottom-24 right-4 transform w-28 h-10 flex flex-row items-center justify-center space-x-1 text-white border-0 shadow-lg transition-all hover:scale-105 rounded-xl text-base bg-violet-500 hover:bg-violet-600",
+            "font-silkscreen w-36 h-12 text-white text-md font-bold uppercase bg-violet-500 border-4 border-violet-700 shadow-[4px_4px_0_#4c1d95] px-6 py-2 hover:bg-violet-300 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0_#4c1d95] transition-all flex flex-col justify-center items-center gap-2",
             !selectedPet && "opacity-50 cursor-not-allowed"
           )}
         >

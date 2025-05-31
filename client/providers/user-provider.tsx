@@ -1,7 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { AuthState, UserData, createUserSession } from '@/lib/services/auth'
+import { AuthState, UserData, createUserSession, deleteAccount as deleteUserAccount } from '@/lib/services/auth'
 import { getPetsByOwner } from '@/lib/services/pets'
 import { Database } from '@/lib/types/database'
 
@@ -12,6 +12,7 @@ interface UserContextType extends AuthState {
   activePet: Pet | null
   login: (walletAddress: string, username?: string) => Promise<void>
   logout: () => void
+  deleteAccount: () => Promise<void>
   refreshUserData: () => Promise<void>
   setActivePet: (pet: Pet) => void
 }
@@ -144,6 +145,24 @@ export function UserProvider({ children }: UserProviderProps) {
     localStorage.setItem('datagotchi_active_pet', JSON.stringify(pet))
   }
 
+  // Delete account
+  const deleteAccount = async () => {
+    if (!user) return
+    
+    try {
+      await deleteUserAccount(user.wallet_address)
+      setUser(null)
+      setPets([])
+      setActivePetState(null)
+      setIsInitialVerificationComplete(false)
+      localStorage.removeItem('datagotchi_user')
+      localStorage.removeItem('datagotchi_active_pet')
+      console.log('Account deleted')
+    } catch (error) {
+      console.error('Error deleting account:', error)
+    }
+  }
+
   const value: UserContextType = {
     user,
     pets,
@@ -152,6 +171,7 @@ export function UserProvider({ children }: UserProviderProps) {
     isAuthenticated,
     login,
     logout,
+    deleteAccount,
     refreshUserData,
     setActivePet
   }

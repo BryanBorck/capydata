@@ -13,16 +13,19 @@ export type Database = {
         Row: {
           wallet_address: string
           username: string
+          points: number
           created_at: string
         }
         Insert: {
           wallet_address: string
           username: string
+          points?: number
           created_at?: string
         }
         Update: {
           wallet_address?: string
           username?: string
+          points?: number
           created_at?: string
         }
         Relationships: []
@@ -33,6 +36,8 @@ export type Database = {
           owner_wallet: string
           name: string
           rarity: 'common' | 'rare' | 'epic' | 'legendary'
+          variant: 'default' | 'pink' | 'blue' | 'ice' | 'black'
+          background: 'farm' | 'ice' | 'beach' | 'forest' | 'lake'
           social: number
           trivia: number
           science: number
@@ -46,6 +51,8 @@ export type Database = {
           owner_wallet: string
           name?: string
           rarity?: 'common' | 'rare' | 'epic' | 'legendary'
+          variant?: 'default' | 'pink' | 'blue' | 'ice' | 'black'
+          background?: 'farm' | 'ice' | 'beach' | 'forest' | 'lake'
           social?: number
           trivia?: number
           science?: number
@@ -59,6 +66,8 @@ export type Database = {
           owner_wallet?: string
           name?: string
           rarity?: 'common' | 'rare' | 'epic' | 'legendary'
+          variant?: 'default' | 'pink' | 'blue' | 'ice' | 'black'
+          background?: 'farm' | 'ice' | 'beach' | 'forest' | 'lake'
           social?: number
           trivia?: number
           science?: number
@@ -74,6 +83,63 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["wallet_address"]
+          }
+        ]
+      }
+      items: {
+        Row: {
+          id: string
+          name: string
+          price: number
+          rarity: 'common' | 'rare' | 'epic' | 'legendary'
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          price: number
+          rarity: 'common' | 'rare' | 'epic' | 'legendary'
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          price?: number
+          rarity?: 'common' | 'rare' | 'epic' | 'legendary'
+          created_at?: string
+        }
+        Relationships: []
+      }
+      pet_items: {
+        Row: {
+          pet_id: string
+          item_id: string
+          equipped_at: string
+        }
+        Insert: {
+          pet_id: string
+          item_id: string
+          equipped_at?: string
+        }
+        Update: {
+          pet_id?: string
+          item_id?: string
+          equipped_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pet_items_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pet_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
           }
         ]
       }
@@ -403,6 +469,8 @@ export type Database = {
     Enums: {
       rarity_t: 'common' | 'rare' | 'epic' | 'legendary'
       data_category_t: 'social' | 'trivia' | 'science' | 'code' | 'trenches' | 'general'
+      pet_variant_t: 'default' | 'pink' | 'blue' | 'ice' | 'black'
+      pet_background_t: 'farm' | 'ice' | 'beach' | 'forest' | 'lake'
     }
     CompositeTypes: {
       [_ in never]: never
