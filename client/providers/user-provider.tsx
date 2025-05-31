@@ -35,12 +35,13 @@ export function UserProvider({ children }: UserProviderProps) {
   const [pets, setPets] = useState<Pet[]>([])
   const [activePet, setActivePetState] = useState<Pet | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isInitialVerificationComplete, setIsInitialVerificationComplete] = useState(false)
 
   const isAuthenticated = !!user
 
   // Load user data from session storage on mount
   useEffect(() => {
-    const loadStoredUser = () => {
+    const loadStoredUser = async () => {
       try {
         const storedUser = localStorage.getItem('datagotchi_user')
         const storedActivePet = localStorage.getItem('datagotchi_active_pet')
@@ -49,8 +50,8 @@ export function UserProvider({ children }: UserProviderProps) {
           const userData = JSON.parse(storedUser) as UserData
           setUser(userData)
           
-          // Load pets for this user
-          loadUserPets(userData.wallet_address)
+          // Load pets for this user and wait for completion
+          await loadUserPets(userData.wallet_address)
         }
         
         if (storedActivePet) {
@@ -64,6 +65,7 @@ export function UserProvider({ children }: UserProviderProps) {
         localStorage.removeItem('datagotchi_active_pet')
       } finally {
         setIsLoading(false)
+        setIsInitialVerificationComplete(true)
       }
     }
 
@@ -81,15 +83,19 @@ export function UserProvider({ children }: UserProviderProps) {
         setActivePetState(userPets[0])
         localStorage.setItem('datagotchi_active_pet', JSON.stringify(userPets[0]))
       }
+      
+      return userPets
     } catch (error) {
       console.error('Error loading user pets:', error)
       setPets([])
+      return []
     }
   }
 
   // Login function
   const login = async (walletAddress: string, username?: string) => {
     setIsLoading(true)
+    setIsInitialVerificationComplete(false)
     try {
       // Create or get user session from Supabase
       const userData = await createUserSession(walletAddress, username)
@@ -97,7 +103,7 @@ export function UserProvider({ children }: UserProviderProps) {
       setUser(userData)
       localStorage.setItem('datagotchi_user', JSON.stringify(userData))
       
-      // Load user's pets
+      // Load user's pets and wait for completion
       await loadUserPets(userData.wallet_address)
       
       console.log('User logged in successfully:', userData)
@@ -106,6 +112,7 @@ export function UserProvider({ children }: UserProviderProps) {
       throw error
     } finally {
       setIsLoading(false)
+      setIsInitialVerificationComplete(true)
     }
   }
 
@@ -114,6 +121,7 @@ export function UserProvider({ children }: UserProviderProps) {
     setUser(null)
     setPets([])
     setActivePetState(null)
+    setIsInitialVerificationComplete(false)
     localStorage.removeItem('datagotchi_user')
     localStorage.removeItem('datagotchi_active_pet')
     console.log('User logged out')

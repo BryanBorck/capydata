@@ -22,7 +22,7 @@ export default function LoginPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      router.push('/dashboard');
+      router.push('/');
     }
   }, [isAuthenticated, router]);
 
@@ -61,7 +61,7 @@ export default function LoginPage() {
       // Get nonce from backend
       const res = await fetch("/api/nonce");
       const { nonce } = await res.json();
-
+      
       // Perform wallet authentication
       const { commandPayload, finalPayload } = await MiniKit.commandsAsync.walletAuth({
         nonce: nonce,
@@ -97,17 +97,38 @@ export default function LoginPage() {
 
         // Use the provider's login function to save to Supabase
         await login(walletAddress, username);
-
+        
         toast.success(`Welcome ${username || "User"}! 🎉`);
         
-        // Redirect to create pet or dashboard
-        router.push('/create-pet');
+        // Redirect to main page which will handle smart routing
+        router.push('/');
       } else {
         toast.error("Authentication verification failed");
       }
     } catch (error: any) {
       console.error("Auth error:", error);
       toast.error("Authentication failed");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleTestMode = async () => {
+    setAuthLoading(true);
+    try {
+      // Test login with a fake wallet address
+      const walletAddress = 'test_wallet_123';
+      const username = 'TestUser';
+      
+      await login(walletAddress, username);
+      
+      toast.success(`Welcome ${username}! ��`);
+      
+      // Redirect to main page which will handle smart routing
+      router.push('/');
+    } catch (error) {
+      console.error('Test login error:', error);
+      toast.error('Test login failed');
     } finally {
       setAuthLoading(false);
     }
@@ -175,10 +196,18 @@ export default function LoginPage() {
 
           {process.env.NEXT_PUBLIC_APP_ENV === "test" ? (
             <Button
-              onClick={() => router.push("/create-pet")}
+              onClick={handleTestMode}
+              disabled={authLoading}
               className="w-full py-3 font-medium"
             >
-              <span>Continue (Test Mode)</span>
+              {authLoading ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                  <span>Testing...</span>
+                </>
+              ) : (
+                <span>Continue (Test Mode)</span>
+              )}
             </Button>
           ) : (
             <Button

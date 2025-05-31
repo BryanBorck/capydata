@@ -1,9 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./_scrollbar.css";
+@import "./_preflight.css";
 
-@custom-variant dark (&:is(.dark *));
-
-@theme inline {
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);

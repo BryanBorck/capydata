@@ -1,17 +1,25 @@
 "use client";
 
-import { useEffect } from "react";
-import { LogOut, Heart, Sword, Users, User, Plus, Settings } from "lucide-react";
+import { useEffect, useState } from "react";
+import { LogOut, Heart, Sword, Users, User, Plus, Settings, Trophy, Activity } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { useUser } from "@/providers/user-provider";
+import { useDatagotchiFetch } from "@/lib/hooks";
+import { DatagotchiSuspense } from "@/components/ui/datagotchi-suspense";
 import { createRandomPet } from "@/lib/services/pets";
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user, pets, activePet, isAuthenticated, logout, refreshUserData, setActivePet } = useUser();
+  
+  // Separate hooks for different data sections
+  const leaderboardFetch = useDatagotchiFetch({ useCache: true });
+  const petActionsFetch = useDatagotchiFetch({ useCache: false });
+  
+  const [isPerformingAction, setIsPerformingAction] = useState(false);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -26,6 +34,13 @@ export default function DashboardPage() {
       router.push('/create-pet');
     }
   }, [isAuthenticated, pets, router]);
+
+  // Load leaderboard data when component mounts
+  useEffect(() => {
+    if (isAuthenticated) {
+      leaderboardFetch.fetchLeaderboard(10);
+    }
+  }, [isAuthenticated]);
 
   const handleLogout = async () => {
     try {
@@ -47,9 +62,58 @@ export default function DashboardPage() {
       const newPet = await createRandomPet(user.wallet_address);
       toast.success(`New pet created! 🎉`);
       await refreshUserData();
+      // Refresh leaderboard to potentially show the new pet
+      leaderboardFetch.fetchLeaderboard(10);
     } catch (error) {
       console.error("Error creating pet:", error);
       toast.error("Failed to create pet. Please try again.");
+    }
+  };
+
+  const handlePetAction = async (action: 'feed' | 'train' | 'play') => {
+    if (!activePet) return;
+    
+    setIsPerformingAction(true);
+    
+    try {
+      let updates: any = {};
+      let message = '';
+      
+      switch (action) {
+        case 'feed':
+          updates = { health: Math.min(100, activePet.health + 10) };
+          message = `${activePet.name} feels healthier! +10 Health`;
+          break;
+        case 'train':
+          updates = { 
+            strength: Math.min(100, activePet.strength + 8),
+            health: Math.max(0, activePet.health - 3)
+          };
+          message = `${activePet.name} got stronger! +8 Strength, -3 Health`;
+          break;
+        case 'play':
+          updates = { 
+            social: Math.min(100, activePet.social + 6),
+            health: Math.max(0, activePet.health - 2)
+          };
+          message = `${activePet.name} had fun! +6 Social, -2 Health`;
+          break;
+      }
+      
+      await petActionsFetch.updatePetStats(activePet.id, updates);
+      toast.success(message);
+      
+      // Refresh user data to update UI
+      await refreshUserData();
+      
+      // Refresh leaderboard in case rankings changed
+      leaderboardFetch.fetchLeaderboard(10);
+      
+    } catch (error) {
+      console.error(`Error performing ${action}:`, error);
+      toast.error(`Failed to ${action} pet. Please try again.`);
+    } finally {
+      setIsPerformingAction(false);
     }
   };
 
@@ -59,7 +123,7 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-50 via-slate-50 to-zinc-100 p-6">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
@@ -76,7 +140,7 @@ export default function DashboardPage() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* User Profile Card */}
           <div className="lg:col-span-1">
             <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-gray-200 shadow-lg">
@@ -96,7 +160,7 @@ export default function DashboardPage() {
                 <div>
                   <span className="text-sm font-medium text-gray-600">Wallet:</span>
                   <div className="mt-1 p-2 bg-gray-50 rounded font-mono text-xs break-all">
-                    {user.wallet_address}
+                    {user.wallet_address.slice(0, 6)}...{user.wallet_address.slice(-4)}
                   </div>
                 </div>
                 
@@ -115,10 +179,83 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
+
+            {/* Leaderboard Section */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-gray-200 shadow-lg mt-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <Trophy className="h-6 w-6 text-yellow-600" />
+                <span className="text-lg font-semibold text-gray-800">Leaderboard</span>
+              </div>
+              
+              <DatagotchiSuspense 
+                loading={leaderboardFetch.loading} 
+                error={leaderboardFetch.error} 
+                data={!!leaderboardFetch.data}
+              >
+                <DatagotchiSuspense.Skeleton>
+                  <div className="space-y-3">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className="flex items-center space-x-3">
+                        <div className="w-6 h-6 bg-gray-200 rounded animate-pulse" />
+                        <div className="flex-1 h-4 bg-gray-200 rounded animate-pulse" />
+                        <div className="w-8 h-4 bg-gray-200 rounded animate-pulse" />
+                      </div>
+                    ))}
+                  </div>
+                </DatagotchiSuspense.Skeleton>
+
+                <DatagotchiSuspense.Error>
+                  <div className="text-center py-4">
+                    <p className="text-sm text-red-600">Failed to load leaderboard</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-2"
+                      onClick={() => leaderboardFetch.fetchLeaderboard(10)}
+                    >
+                      Retry
+                    </Button>
+                  </div>
+                </DatagotchiSuspense.Error>
+
+                <DatagotchiSuspense.NoData>
+                  <div className="text-center py-4">
+                    <p className="text-sm text-gray-500">No leaderboard data yet</p>
+                  </div>
+                </DatagotchiSuspense.NoData>
+
+                <DatagotchiSuspense.Data>
+                  <div className="space-y-2">
+                    {leaderboardFetch.data?.slice(0, 5).map((pet: any, index: number) => (
+                      <div key={pet.id} className="flex items-center space-x-3 p-2 rounded hover:bg-gray-50">
+                        <span className="text-sm font-bold text-gray-500 w-6">#{index + 1}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-800 truncate">{pet.name}</p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {pet.profiles?.username || 'Unknown'}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-bold text-gray-800">{pet.strength}</div>
+                          <div className="text-xs text-gray-500">STR</div>
+                        </div>
+                      </div>
+                    ))}
+                    {leaderboardFetch.data?.length > 5 && (
+                      <div className="text-center pt-2">
+                        <Button variant="ghost" size="sm" className="text-xs">
+                          View Full Leaderboard
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </DatagotchiSuspense.Data>
+              </DatagotchiSuspense>
+            </div>
           </div>
 
           {/* Active Pet Card */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-3">
             {activePet ? (
               <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-gray-200 shadow-lg">
                 <div className="flex items-center justify-between mb-6">
@@ -136,9 +273,17 @@ export default function DashboardPage() {
                       </span>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm">
-                    <Settings className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center space-x-2">
+                    {(isPerformingAction || petActionsFetch.loading) && (
+                      <div className="flex items-center space-x-2 text-sm text-gray-500">
+                        <Activity className="h-4 w-4 animate-spin" />
+                        <span>Updating...</span>
+                      </div>
+                    )}
+                    <Button variant="outline" size="sm">
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
                 
                 <div className="grid grid-cols-3 gap-6 mb-6">
@@ -148,6 +293,12 @@ export default function DashboardPage() {
                     </div>
                     <div className="text-2xl font-bold text-gray-800">{activePet.health}</div>
                     <div className="text-sm text-gray-500">Health</div>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                      <div 
+                        className="bg-red-500 h-2 rounded-full transition-all duration-300" 
+                        style={{ width: `${activePet.health}%` }}
+                      />
+                    </div>
                   </div>
                   <div className="text-center">
                     <div className="flex justify-center mb-2">
@@ -155,6 +306,12 @@ export default function DashboardPage() {
                     </div>
                     <div className="text-2xl font-bold text-gray-800">{activePet.strength}</div>
                     <div className="text-sm text-gray-500">Strength</div>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                      <div 
+                        className="bg-orange-500 h-2 rounded-full transition-all duration-300" 
+                        style={{ width: `${activePet.strength}%` }}
+                      />
+                    </div>
                   </div>
                   <div className="text-center">
                     <div className="flex justify-center mb-2">
@@ -162,6 +319,12 @@ export default function DashboardPage() {
                     </div>
                     <div className="text-2xl font-bold text-gray-800">{activePet.social}</div>
                     <div className="text-sm text-gray-500">Social</div>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                      <div 
+                        className="bg-blue-500 h-2 rounded-full transition-all duration-300" 
+                        style={{ width: `${activePet.social}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -170,13 +333,30 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="flex space-x-3">
-                  <Button className="flex-1">
+                  <Button 
+                    className="flex-1" 
+                    onClick={() => handlePetAction('feed')}
+                    disabled={isPerformingAction || activePet.health >= 100}
+                  >
+                    <Heart className="h-4 w-4 mr-2" />
                     Feed Pet
                   </Button>
-                  <Button variant="outline" className="flex-1">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => handlePetAction('train')}
+                    disabled={isPerformingAction || activePet.health <= 3}
+                  >
+                    <Sword className="h-4 w-4 mr-2" />
                     Train
                   </Button>
-                  <Button variant="outline" className="flex-1">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => handlePetAction('play')}
+                    disabled={isPerformingAction || activePet.health <= 2}
+                  >
+                    <Users className="h-4 w-4 mr-2" />
                     Play
                   </Button>
                 </div>
@@ -199,7 +379,7 @@ export default function DashboardPage() {
         {pets.length > 0 && (
           <div className="mt-8">
             <h3 className="text-2xl font-bold text-gray-800 mb-4">Your Pets</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {pets.map((pet) => (
                 <div
                   key={pet.id}
@@ -211,29 +391,29 @@ export default function DashboardPage() {
                   onClick={() => setActivePet(pet)}
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-semibold text-gray-800">{pet.name}</h4>
+                    <h4 className="font-semibold text-gray-800 truncate">{pet.name}</h4>
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
                       pet.rarity === 'legendary' ? 'bg-yellow-100 text-yellow-800' :
                       pet.rarity === 'epic' ? 'bg-purple-100 text-purple-800' :
                       pet.rarity === 'rare' ? 'bg-blue-100 text-blue-800' :
                       'bg-gray-100 text-gray-800'
                     }`}>
-                      {pet.rarity}
+                      {pet.rarity.charAt(0).toUpperCase()}
                     </span>
                   </div>
                   
                   <div className="grid grid-cols-3 gap-2 text-xs">
                     <div className="text-center">
                       <Heart className="h-3 w-3 text-red-500 mx-auto mb-1" />
-                      <div>{pet.health}</div>
+                      <div className="font-medium">{pet.health}</div>
                     </div>
                     <div className="text-center">
                       <Sword className="h-3 w-3 text-orange-500 mx-auto mb-1" />
-                      <div>{pet.strength}</div>
+                      <div className="font-medium">{pet.strength}</div>
                     </div>
                     <div className="text-center">
                       <Users className="h-3 w-3 text-blue-500 mx-auto mb-1" />
-                      <div>{pet.social}</div>
+                      <div className="font-medium">{pet.social}</div>
                     </div>
                   </div>
                 </div>

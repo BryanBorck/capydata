@@ -1,51 +1,47 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/providers/user-provider";
+import { Loader2 } from "lucide-react";
 
-export default function Home() {
+export default function MainPage() {
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const router = useRouter();
   const { isAuthenticated, pets, isLoading } = useUser();
 
   useEffect(() => {
-    if (!isLoading) {
+    // Don't redirect if still loading user data
+    if (isLoading) return;
+
+    const redirect = async () => {
+      setIsRedirecting(true);
+
+      // Small delay to prevent redirect flashing
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       if (!isAuthenticated) {
+        // Not authenticated -> go to login
         router.push('/login');
       } else if (pets.length === 0) {
-        router.push('/create-pet');
+        // Authenticated but no pets -> go to onboard
+        router.push('/onboard');
       } else {
-        router.push('/dashboard');
+        // Authenticated with pets -> go to home
+        router.push('/home');
       }
-    }
+    };
+
+    redirect();
   }, [isAuthenticated, pets, isLoading, router]);
 
-  // Show loading while redirecting
+  // Show loading spinner while determining where to redirect
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-8 lg:p-12 bg-gradient-to-br from-slate-50 to-gray-100">
-      <div className="flex flex-col items-center justify-center text-center">
-        <svg
-          className="animate-spin h-10 w-10 text-slate-700"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          ></circle>
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-          ></path>
-        </svg>
-        <p className="mt-4 text-lg font-medium text-slate-700">
-          Redirecting...
+    <main className="flex min-h-[100dvh] flex-col items-center justify-center bg-gradient-to-br from-gray-50 via-slate-50 to-zinc-100">
+      <div className="flex flex-col items-center space-y-4">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+        <p className="text-gray-600">
+          {isRedirecting ? 'Redirecting...' : 'Loading...'}
         </p>
       </div>
     </main>
