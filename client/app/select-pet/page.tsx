@@ -346,15 +346,15 @@ export default function SelectPetPage() {
               {/* Stats Grid */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="text-center p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <Heart className="h-5 w-5 text-violet-500 mx-auto mb-1" />
-                  <div className="font-bold text-lg text-violet-500">{currentPet.health}</div>
-                  <div className="text-xs text-gray-600 uppercase tracking-wide">Health</div>
+                  <Brain className="h-5 w-5 text-violet-500 mx-auto mb-1" />
+                  <div className="font-bold text-lg text-violet-500">{currentPet.trivia}</div>
+                  <div className="text-xs text-gray-600 uppercase tracking-wide">Trivia</div>
                 </div>
                 
                 <div className="text-center p-3 bg-gray-50 rounded-lg border border-gray-200">
                   <Zap className="h-5 w-5 text-violet-500 mx-auto mb-1" />
-                  <div className="font-bold text-lg text-violet-500">{currentPet.strength}</div>
-                  <div className="text-xs text-gray-600 uppercase tracking-wide">Strength</div>
+                  <div className="font-bold text-lg text-violet-500">{currentPet.streak}</div>
+                  <div className="text-xs text-gray-600 uppercase tracking-wide">Streak</div>
                 </div>
                 
                 <div className="text-center p-3 bg-gray-50 rounded-lg border border-gray-200">
