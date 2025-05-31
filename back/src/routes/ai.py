@@ -37,6 +37,19 @@ class FlashcardResponse(BaseModel):
     tokens_used: Optional[int] = None
 
 
+class ContentGenerationRequest(BaseModel):
+    content_type: str  # 'summary', 'study_guide', 'faq', 'timeline', 'briefing'
+    context: str
+    pet_name: Optional[str] = None
+    additional_instructions: Optional[str] = None
+
+
+class ContentGenerationResponse(BaseModel):
+    content: str
+    content_type: str
+    tokens_used: Optional[int] = None
+
+
 def get_openai_client() -> OpenAI:
     """Get OpenAI client instance."""
     api_key = os.getenv("OPENAI_API_KEY")
@@ -127,26 +140,38 @@ async def chat_with_knowledge(
     """
     Interactive chat interface with the knowledge base.
     
-    This endpoint provides a more conversational interface for exploring
-    the pet's knowledge and getting answers to specific questions.
+    This endpoint provides a conversational interface similar to NotebookLM,
+    with source-grounded responses and citation capabilities.
     """
     try:
-        system_prompt = f"""You are a knowledgeable AI assistant helping a user explore their pet{' ' + payload.pet_name if payload.pet_name else ''}'s knowledge base. 
+        system_prompt = f"""You are an AI assistant similar to Google's NotebookLM, helping users explore and understand their knowledge base. 
 
-You have access to specific knowledge content that the pet has learned. Your job is to:
-1. Answer questions directly based on the provided context
-2. Explain concepts and make connections
-3. Suggest related topics or areas to explore
-4. Be helpful, friendly, and engaging
+Your role is to:
+1. Provide accurate, source-grounded responses based ONLY on the provided knowledge
+2. Make connections between different pieces of information
+3. Be conversational but precise
+4. Acknowledge when information is not available in the knowledge base
+5. Help users discover insights and patterns in their data
 
-Keep responses focused and relevant to the available knowledge. If the context doesn't contain enough information to answer fully, say so and suggest what additional information might be helpful."""
+Knowledge Context Guidelines:
+- Always base your responses on the provided context
+- If the context doesn't contain enough information, clearly state this limitation
+- Make intelligent connections between different sources when relevant
+- Use a conversational tone while maintaining accuracy
+- Reference specific details from the sources when possible
 
-        user_prompt = f"""Question: {payload.query}
+Pet Context: You're helping explore {payload.pet_name if payload.pet_name else 'the user'}'s knowledge base."""
 
-Available Knowledge:
-{payload.context}
+        user_prompt = f"""User Question: {payload.query}
 
-Please provide a helpful response based on the available knowledge."""
+Available Knowledge Sources:
+{payload.context if payload.context else "No relevant knowledge sources found for this query."}
+
+Instructions:
+- If relevant knowledge is available, provide a comprehensive answer based on the sources
+- If the knowledge is insufficient, explain what's missing and suggest what additional information would be helpful
+- Make connections between different pieces of information when relevant
+- Be helpful and engaging while staying grounded in the available sources"""
 
         response = openai_client.chat.completions.create(
             model="gpt-4o",
@@ -154,13 +179,14 @@ Please provide a helpful response based on the available knowledge."""
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            max_tokens=500,
+            max_tokens=600,
             temperature=0.6
         )
         
         return {
             "response": response.choices[0].message.content,
-            "tokens_used": response.usage.total_tokens if response.usage else None
+            "tokens_used": response.usage.total_tokens if response.usage else None,
+            "model": "gpt-4o"
         }
         
     except Exception as e:
@@ -290,4 +316,111 @@ Return valid JSON only, no additional text."""
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate flashcards: {str(e)}"
+        )
+
+
+@router.post("/generate-content", response_model=ContentGenerationResponse)
+async def generate_content(
+    payload: ContentGenerationRequest,
+    openai_client: OpenAI = Depends(get_openai_client)
+):
+    """
+    Generate various types of content from knowledge base, similar to NotebookLM Studio.
+    
+    Supports: summaries, study guides, FAQs, timelines, and briefings.
+    """
+    try:
+        content_prompts = {
+            'summary': """Create a comprehensive summary of the provided knowledge. Structure it with:
+1. Key Topics Overview
+2. Main Insights and Findings  
+3. Important Details and Facts
+4. Connections and Relationships
+
+Make it well-organized and easy to understand.""",
+
+            'study_guide': """Create a detailed study guide from the provided knowledge. Include:
+1. Key Concepts and Definitions
+2. Important Facts to Remember
+3. Study Questions and Topics
+4. Connections Between Ideas
+5. Practical Applications
+
+Format it for easy studying and review.""",
+
+            'faq': """Generate a comprehensive FAQ based on the provided knowledge. Create:
+1. Frequently Asked Questions about the topics
+2. Clear, detailed answers based on the knowledge
+3. Follow-up questions for deeper understanding
+4. Related topics to explore
+
+Make it conversational and helpful.""",
+
+            'timeline': """Create a timeline or chronological overview from the provided knowledge. Include:
+1. Key Events or Developments
+2. Important Dates and Milestones  
+3. Progression of Ideas or Concepts
+4. Cause and Effect Relationships
+
+Organize information chronologically where possible.""",
+
+            'briefing': """Create an executive briefing from the provided knowledge. Include:
+1. Executive Summary
+2. Key Points and Takeaways
+3. Important Data and Statistics
+4. Actionable Insights
+5. Recommendations or Next Steps
+
+Keep it concise but comprehensive."""
+        }
+
+        if payload.content_type not in content_prompts:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unsupported content type: {payload.content_type}"
+            )
+
+        system_prompt = f"""You are an expert content creator, similar to NotebookLM's Studio feature. Your job is to transform knowledge into well-structured, useful content.
+
+Guidelines:
+- Base all content strictly on the provided knowledge
+- Create well-organized, professional content
+- Use clear headings and structure
+- Be comprehensive but concise
+- Maintain accuracy and cite specific information when relevant
+- Make content engaging and easy to understand
+
+Content Type: {payload.content_type.replace('_', ' ').title()}"""
+
+        user_prompt = f"""{content_prompts[payload.content_type]}
+
+Knowledge Base:
+{payload.context}
+
+{f"Additional Instructions: {payload.additional_instructions}" if payload.additional_instructions else ""}
+
+{f"Context: This content is for {payload.pet_name}'s knowledge base." if payload.pet_name else ""}
+
+Generate the {payload.content_type.replace('_', ' ')} based on the provided knowledge."""
+
+        response = openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            max_tokens=1200,
+            temperature=0.7
+        )
+        
+        return ContentGenerationResponse(
+            content=response.choices[0].message.content,
+            content_type=payload.content_type,
+            tokens_used=response.usage.total_tokens if response.usage else None
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate content: {str(e)}"
         ) 
