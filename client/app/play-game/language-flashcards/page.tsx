@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Globe, Trophy, X, Star, HelpCircle } from "lucide-react";
+import { ArrowLeft, Globe, Trophy, X, Star, HelpCircle, Home, RotateCcw } from "lucide-react";
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 import { useUser } from "@/providers/user-provider";
 import { APP_NAME } from "@/lib/constants";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { getGameConfig } from "../game-config";
+import { useGameRewards } from "@/lib/hooks/use-game-rewards";
 
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -73,6 +74,16 @@ export default function LanguageFlashcardsGamePage() {
 
   const totalCards = gameConfig.stats.cards || 5;
 
+  // Use game rewards hook
+  const { rewardsAwarded, awardRewards, resetRewards } = useGameRewards(
+    gameConfig.id,
+    {
+      points: gameConfig.rewards.points,
+      skill: gameConfig.rewards.skill,
+      skillValue: gameConfig.rewards.skillValue
+    }
+  );
+
   const availableLanguages = [
     'Spanish', 'French', 'German', 'Italian', 'Portuguese', 
     'Japanese', 'Korean', 'Mandarin', 'Arabic', 'Russian'
@@ -84,6 +95,13 @@ export default function LanguageFlashcardsGamePage() {
       router.push('/login');
     }
   }, [isAuthenticated, router]);
+
+  // Award rewards when game is completed
+  useEffect(() => {
+    if (isComplete && !rewardsAwarded) {
+      awardRewards();
+    }
+  }, [isComplete, rewardsAwarded, awardRewards]);
 
   const handleLanguageSelect = async (language: string) => {
     setSelectedLanguage(language);
@@ -141,6 +159,7 @@ export default function LanguageFlashcardsGamePage() {
     setSelectedAnswer('');
     setFlashcards([]);
     setError('');
+    resetRewards();
   };
 
   if (!isAuthenticated) {
@@ -302,16 +321,36 @@ export default function LanguageFlashcardsGamePage() {
                 YOU EARNED {score} POINTS LEARNING {selectedLanguage}!
               </div>
               
-              <div className="space-y-3">
-                <button
-                  onClick={handlePlayAgain}
-                  className="font-silkscreen text-xs font-bold text-white uppercase bg-green-600 border-2 border-green-800 shadow-[2px_2px_0_#14532d] px-6 py-2 hover:bg-green-500 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#14532d] transition-all"
-                >
-                  PLAY AGAIN
-                </button>
+              <div className="space-y-4">
+                {/* Navigation Buttons */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <button
+                    onClick={() => router.push('/')}
+                    className="font-silkscreen text-xs font-bold text-white uppercase bg-green-600 border-2 border-green-800 shadow-[2px_2px_0_#14532d] px-4 py-2 hover:bg-green-500 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#14532d] transition-all flex items-center justify-center gap-2"
+                  >
+                    <Home className="h-3 w-3" />
+                    HOME
+                  </button>
+                  
+                  <button
+                    onClick={() => router.push('/play-game')}
+                    className="font-silkscreen text-xs font-bold text-white uppercase bg-blue-600 border-2 border-blue-800 shadow-[2px_2px_0_#1e3a8a] px-4 py-2 hover:bg-blue-500 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#1e3a8a] transition-all flex items-center justify-center gap-2"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    NEW GAME
+                  </button>
+                  
+                  <button
+                    onClick={handlePlayAgain}
+                    className="font-silkscreen text-xs font-bold text-white uppercase bg-green-600 border-2 border-green-800 shadow-[2px_2px_0_#14532d] px-4 py-2 hover:bg-green-500 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#14532d] transition-all flex items-center justify-center gap-2"
+                  >
+                    <Trophy className="h-3 w-3" />
+                    PLAY AGAIN
+                  </button>
+                </div>
                 
-                <div className="font-silkscreen text-xs text-gray-600 uppercase">
-                  {gameConfig.rewards.display} EARNED
+                <div className="font-silkscreen text-xs text-green-700 uppercase font-bold">
+                  {rewardsAwarded ? "✓ " : ""}REWARDS: {gameConfig.rewards.display}
                 </div>
               </div>
             </div>

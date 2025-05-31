@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Trophy, Check, HelpCircle, X } from "lucide-react";
+import { ArrowLeft, Trophy, Check, HelpCircle, X, Home, RotateCcw } from "lucide-react";
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 import { useUser } from "@/providers/user-provider";
 import { APP_NAME } from "@/lib/constants";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { getGameConfig } from "../game-config";
+import { useGameRewards } from "@/lib/hooks/use-game-rewards";
 
 // Mock data for images
 const SAMPLE_IMAGES = [
@@ -38,12 +39,29 @@ export default function ImageQualityGamePage() {
 
   const totalRounds = gameConfig.stats.rounds || 3;
 
+  // Use game rewards hook
+  const { rewardsAwarded, awardRewards, resetRewards } = useGameRewards(
+    gameConfig.id,
+    {
+      points: gameConfig.rewards.points,
+      skill: gameConfig.rewards.skill,
+      skillValue: gameConfig.rewards.skillValue
+    }
+  );
+
   // Redirect if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
       router.push('/login');
     }
   }, [isAuthenticated, router]);
+
+  // Award rewards when game is completed
+  useEffect(() => {
+    if (isComplete && !rewardsAwarded) {
+      awardRewards();
+    }
+  }, [isComplete, rewardsAwarded, awardRewards]);
 
   const handleImageSelect = (imageIndex: number) => {
     if (selectedImage !== null) return;
@@ -62,7 +80,6 @@ export default function ImageQualityGamePage() {
         setShowFeedback(false);
       } else {
         setIsComplete(true);
-        toast.success(`Game complete! You earned ${score + points} points!`);
       }
     }, 2000);
   };
@@ -73,6 +90,7 @@ export default function ImageQualityGamePage() {
     setIsComplete(false);
     setSelectedImage(null);
     setShowFeedback(false);
+    resetRewards();
   };
 
   if (!isAuthenticated) {
@@ -156,7 +174,7 @@ export default function ImageQualityGamePage() {
           {!isComplete && (
             /* Stats Cards Row */
             <div className="grid grid-cols-3 gap-4">
-              <div className="bg-blue-100 border-4 border-blue-600 shadow-[4px_4px_0_#1e3a8a] p-4 text-center">
+              <div className="bg-blue-100 border-4 border-blue-600 shadow-[4px_4px_0_#1e3a8a] p-2 text-center flex flex-col items-center justify-center">
                 <div className="font-silkscreen text-lg font-bold text-blue-800 uppercase">
                   {currentRound + 1}/{totalRounds}
                 </div>
@@ -165,7 +183,7 @@ export default function ImageQualityGamePage() {
                 </div>
               </div>
               
-              <div className="bg-green-100 border-4 border-green-600 shadow-[4px_4px_0_#14532d] p-4 text-center">
+              <div className="bg-green-100 border-4 border-green-600 shadow-[4px_4px_0_#14532d] p-2 text-center flex flex-col items-center justify-center">
                 <div className="font-silkscreen text-lg font-bold text-green-800 uppercase">
                   {score}
                 </div>
@@ -174,7 +192,7 @@ export default function ImageQualityGamePage() {
                 </div>
               </div>
               
-              <div className="bg-purple-100 border-4 border-purple-600 shadow-[4px_4px_0_#581c87] p-4 text-center">
+              <div className="bg-purple-100 border-4 border-purple-600 shadow-[4px_4px_0_#581c87] p-2 text-center flex flex-col items-center justify-center">
                 <div className="font-silkscreen text-lg font-bold text-purple-800 uppercase">
                   {gameConfig.timeEstimate}
                 </div>
@@ -196,19 +214,39 @@ export default function ImageQualityGamePage() {
                 GAME COMPLETE!
               </div>
               <div className="font-silkscreen text-sm text-gray-600 uppercase mb-6">
-                YOU EARNED {score} POINTS FOR YOUR IMAGE RATINGS!
+                GREAT JOB RATING IMAGES!
               </div>
               
-              <div className="space-y-3">
-                <button
-                  onClick={handlePlayAgain}
-                  className="font-silkscreen text-xs font-bold text-white uppercase bg-blue-600 border-2 border-blue-800 shadow-[2px_2px_0_#1e3a8a] px-6 py-2 hover:bg-blue-500 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#1e3a8a] transition-all"
-                >
-                  PLAY AGAIN
-                </button>
+              <div className="space-y-4">
+                {/* Navigation Buttons */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <button
+                    onClick={() => router.push('/')}
+                    className="font-silkscreen text-xs font-bold text-white uppercase bg-green-600 border-2 border-green-800 shadow-[2px_2px_0_#14532d] px-4 py-2 hover:bg-green-500 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#14532d] transition-all flex items-center justify-center gap-2"
+                  >
+                    <Home className="h-3 w-3" />
+                    HOME
+                  </button>
+                  
+                  <button
+                    onClick={() => router.push('/play-game')}
+                    className="font-silkscreen text-xs font-bold text-white uppercase bg-blue-600 border-2 border-blue-800 shadow-[2px_2px_0_#1e3a8a] px-4 py-2 hover:bg-blue-500 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#1e3a8a] transition-all flex items-center justify-center gap-2"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    NEW GAME
+                  </button>
+                  
+                  <button
+                    onClick={handlePlayAgain}
+                    className="font-silkscreen text-xs font-bold text-white uppercase bg-blue-600 border-2 border-blue-800 shadow-[2px_2px_0_#1e3a8a] px-4 py-2 hover:bg-blue-500 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#1e3a8a] transition-all flex items-center justify-center gap-2"
+                  >
+                    <Trophy className="h-3 w-3" />
+                    PLAY AGAIN
+                  </button>
+                </div>
                 
-                <div className="font-silkscreen text-xs text-gray-600 uppercase">
-                  {gameConfig.rewards.display} EARNED
+                <div className="font-silkscreen text-xs text-green-700 uppercase font-bold">
+                  {rewardsAwarded ? "✓ " : ""}REWARDS: {gameConfig.rewards.display}
                 </div>
               </div>
             </div>

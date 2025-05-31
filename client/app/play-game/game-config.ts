@@ -9,9 +9,9 @@ export interface GameConfig {
   difficulty: 'Easy' | 'Medium' | 'Hard';
   rewards: {
     display: string;
-    xp: number;
-    stat: string;
-    statValue: number;
+    points: number;
+    skill: 'social' | 'trivia' | 'science' | 'code' | 'trenches' | 'streak';
+    skillValue: number;
   };
   timeEstimate: string;
   category: string;
@@ -33,10 +33,10 @@ export const GAME_CONFIGS: Record<string, GameConfig> = {
     color: 'blue',
     difficulty: 'Easy',
     rewards: {
-      display: '+5 XP, +1 Health',
-      xp: 5,
-      stat: 'Health',
-      statValue: 1
+      display: '+5 Points, +1 Science',
+      points: 5,
+      skill: 'science',
+      skillValue: 1
     },
     timeEstimate: '30 seconds',
     category: 'Visual',
@@ -60,10 +60,10 @@ export const GAME_CONFIGS: Record<string, GameConfig> = {
     color: 'green',
     difficulty: 'Easy',
     rewards: {
-      display: '+8 XP, +2 Social',
-      xp: 8,
-      stat: 'Social',
-      statValue: 2
+      display: '+8 Points, +2 Social',
+      points: 8,
+      skill: 'social',
+      skillValue: 2
     },
     timeEstimate: '1 minute',
     category: 'Language',
@@ -87,10 +87,10 @@ export const GAME_CONFIGS: Record<string, GameConfig> = {
     color: 'purple',
     difficulty: 'Easy',
     rewards: {
-      display: '+6 XP, +1 Strength',
-      xp: 6,
-      stat: 'Strength',
-      statValue: 1
+      display: '+6 Points, +1 Code',
+      points: 6,
+      skill: 'code',
+      skillValue: 1
     },
     timeEstimate: '45 seconds',
     category: 'Text',
@@ -114,10 +114,10 @@ export const GAME_CONFIGS: Record<string, GameConfig> = {
     color: 'orange',
     difficulty: 'Easy',
     rewards: {
-      display: '+15 XP, +1 Intelligence',
-      xp: 15,
-      stat: 'Intelligence',
-      statValue: 1
+      display: '+15 Points, +1 Trivia',
+      points: 15,
+      skill: 'trivia',
+      skillValue: 1
     },
     timeEstimate: '2 minutes',
     category: 'Trivia',

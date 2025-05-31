@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Database, Settings, Heart, Zap, Users, PawPrint, BarChart3, Brain, Sword, Beaker, Code, Flame } from "lucide-react";
+import { Plus, Database, Settings, Heart, Zap, Users, PawPrint, BarChart3, Brain, Sword, Beaker, Code, Flame, Coins } from "lucide-react";
 import { AnimatedShinyText } from "@/components/magicui/animated-shiny-text";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -124,7 +124,7 @@ const LazyCapybaraImage = ({
 export default function HomePage() {
   const router = useRouter();
   
-  const { user, isAuthenticated, pets } = useUser();
+  const { user, isAuthenticated, pets, refreshUserData } = useUser();
 
   // Simple function to get current active pet ID
   const getActivePetId = (): string | null => {
@@ -288,17 +288,17 @@ export default function HomePage() {
             {/* Select Pet Button */}
             <button
               onClick={() => router.push("/select-pet")}
-              className="font-silkscreen h-8 w-8 flex items-center justify-center text-white border-2 border-gray-700 shadow-[2px_2px_0_#374151] transition-all hover:bg-gray-300 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151] bg-gray-500 cursor-pointer"
+              className="font-silkscreen h-10 w-10 flex items-center justify-center text-white border-2 border-gray-700 shadow-[2px_2px_0_#374151] transition-all hover:bg-gray-300 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151] bg-gray-500 cursor-pointer"
             >
-              <PawPrint className="h-4 w-4" />
+              <PawPrint className="h-5 w-5" />
             </button>
 
             {/* Create Pet Button */}
             <button
               onClick={() => router.push("/create-pet")}
-              className="font-silkscreen h-8 w-8 flex items-center justify-center text-white border-2 border-gray-700 shadow-[2px_2px_0_#374151] transition-all hover:bg-gray-300 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151] bg-gray-500"
+              className="font-silkscreen h-10 w-10 flex items-center justify-center text-white border-2 border-gray-700 shadow-[2px_2px_0_#374151] transition-all hover:bg-gray-300 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151] bg-gray-500"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-5 w-5" />
             </button>
           </div>
 
@@ -358,6 +358,20 @@ export default function HomePage() {
                 <Flame className="h-5 w-5 text-white" />
               </div>
               <span className="font-silkscreen text-base font-bold text-orange-700 w-[3ch] text-right">{selectedPet.streak}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Points Display (Top Right, below header) */}
+      {user && (
+        <div className="absolute top-18 right-3 z-20">
+          <div className="flex items-center space-x-2 bg-white rounded-l-full">
+            <div className="font-silkscreen text-sm font-bold text-yellow-700 min-w-[4ch] text-right">
+              {user.points || 0}
+            </div>
+            <div className="flex items-center justify-center bg-yellow-500 border-2 border-yellow-700 shadow-[2px_2px_0_#92400e] p-1">
+              <Coins className="h-5 w-5 text-white" />
             </div>
           </div>
         </div>

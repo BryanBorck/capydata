@@ -1,7 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { AuthState, UserData, createUserSession, deleteAccount as deleteUserAccount } from '@/lib/services/auth'
+import { AuthState, UserData, createUserSession, deleteAccount as deleteUserAccount, getProfileByWallet } from '@/lib/services/auth'
 import { getPetsByOwner } from '@/lib/services/pets'
 import { Database } from '@/lib/types/database'
 
@@ -50,6 +50,22 @@ export function UserProvider({ children }: UserProviderProps) {
         if (storedUser) {
           const userData = JSON.parse(storedUser) as UserData
           setUser(userData)
+          
+          // Check if user data has points field, if not, refresh it
+          if (userData.points === undefined) {
+            console.log('User data missing points field, refreshing...')
+            const profile = await getProfileByWallet(userData.wallet_address)
+            if (profile) {
+              const updatedUserData: UserData = {
+                wallet_address: profile.wallet_address,
+                username: profile.username,
+                points: profile.points,
+                created_at: profile.created_at
+              }
+              setUser(updatedUserData)
+              localStorage.setItem('datagotchi_user', JSON.stringify(updatedUserData))
+            }
+          }
           
           // Load pets for this user and wait for completion
           await loadUserPets(userData.wallet_address)
@@ -128,12 +144,38 @@ export function UserProvider({ children }: UserProviderProps) {
     console.log('User logged out')
   }
 
+  // Refresh user profile data
+  const refreshUserProfile = async () => {
+    if (!user) return
+    
+    try {
+      // Get fresh user data from database
+      const profile = await getProfileByWallet(user.wallet_address)
+      if (profile) {
+        const updatedUserData: UserData = {
+          wallet_address: profile.wallet_address,
+          username: profile.username,
+          points: profile.points,
+          created_at: profile.created_at
+        }
+        setUser(updatedUserData)
+        localStorage.setItem('datagotchi_user', JSON.stringify(updatedUserData))
+      }
+    } catch (error) {
+      console.error('Error refreshing user profile:', error)
+    }
+  }
+
   // Refresh user data
   const refreshUserData = async () => {
     if (!user) return
     
     try {
-      await loadUserPets(user.wallet_address)
+      // Refresh both user profile and pets
+      await Promise.all([
+        refreshUserProfile(),
+        loadUserPets(user.wallet_address)
+      ])
     } catch (error) {
       console.error('Error refreshing user data:', error)
     }

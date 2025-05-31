@@ -7,6 +7,7 @@ type ProfileInsert = Database['public']['Tables']['profiles']['Insert']
 export interface UserData {
   wallet_address: string
   username: string
+  points: number
   created_at: string
 }
 
@@ -20,12 +21,14 @@ export interface AuthState {
 export async function createOrUpdateProfile(userData: {
   wallet_address: string
   username: string
+  points?: number
 }): Promise<Profile> {
   const { data, error } = await supabase
     .from('profiles')
     .upsert({
       wallet_address: userData.wallet_address,
-      username: userData.username
+      username: userData.username,
+      ...(userData.points !== undefined && { points: userData.points })
     })
     .select()
     .single()
@@ -101,6 +104,7 @@ export async function createUserSession(walletAddress: string, username?: string
     return {
       wallet_address: profile.wallet_address,
       username: profile.username,
+      points: profile.points,
       created_at: profile.created_at
     }
   } catch (error) {

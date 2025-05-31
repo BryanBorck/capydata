@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Trophy, BookOpen, Star, HelpCircle, X } from "lucide-react";
+import { ArrowLeft, Trophy, BookOpen, Star, HelpCircle, X, Home, RotateCcw } from "lucide-react";
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 import { useUser } from "@/providers/user-provider";
 import { APP_NAME } from "@/lib/constants";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { getGameConfig } from "../game-config";
+import { useGameRewards } from "@/lib/hooks/use-game-rewards";
 
 // Trivia questions data
 const TRIVIA_QUESTIONS = [
@@ -84,12 +85,29 @@ export default function KnowledgeTriviaGamePage() {
   const totalQuestions = gameConfig.stats.questions || 6;
   const question = TRIVIA_QUESTIONS[currentQuestion];
 
+  // Use game rewards hook
+  const { rewardsAwarded, awardRewards, resetRewards } = useGameRewards(
+    gameConfig.id,
+    {
+      points: gameConfig.rewards.points,
+      skill: gameConfig.rewards.skill,
+      skillValue: gameConfig.rewards.skillValue
+    }
+  );
+
   // Redirect if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
       router.push('/login');
     }
   }, [isAuthenticated, router]);
+
+  // Award rewards when game is completed
+  useEffect(() => {
+    if (isComplete && !rewardsAwarded) {
+      awardRewards();
+    }
+  }, [isComplete, rewardsAwarded, awardRewards]);
 
   const handleAnswerSelect = (answer: string) => {
     if (selectedAnswer !== '') return;
@@ -113,7 +131,6 @@ export default function KnowledgeTriviaGamePage() {
         setShowFact(false);
       } else {
         setIsComplete(true);
-        toast.success(`Trivia complete! You earned ${score + points} points and learned amazing facts!`);
       }
     }, 4000);
   };
@@ -125,6 +142,7 @@ export default function KnowledgeTriviaGamePage() {
     setShowFeedback(false);
     setSelectedAnswer('');
     setShowFact(false);
+    resetRewards();
   };
 
   if (!isAuthenticated) {
@@ -208,7 +226,7 @@ export default function KnowledgeTriviaGamePage() {
           {!isComplete && (
             /* Stats Cards Row */
             <div className="grid grid-cols-3 gap-4">
-              <div className="bg-orange-100 border-4 border-orange-600 shadow-[4px_4px_0_#9a3412] p-4 text-center">
+              <div className="bg-orange-100 border-4 border-orange-600 shadow-[4px_4px_0_#9a3412] p-2 text-center flex flex-col items-center justify-center">
                 <div className="font-silkscreen text-sm font-bold text-orange-800 uppercase">
                   {question.category}
                 </div>
@@ -217,7 +235,7 @@ export default function KnowledgeTriviaGamePage() {
                 </div>
               </div>
               
-              <div className="bg-green-100 border-4 border-green-600 shadow-[4px_4px_0_#14532d] p-4 text-center">
+              <div className="bg-green-100 border-4 border-green-600 shadow-[4px_4px_0_#14532d] p-2 text-center flex flex-col items-center justify-center">
                 <div className="font-silkscreen text-lg font-bold text-green-800 uppercase">
                   {score}
                 </div>
@@ -226,7 +244,7 @@ export default function KnowledgeTriviaGamePage() {
                 </div>
               </div>
               
-              <div className="bg-purple-100 border-4 border-purple-600 shadow-[4px_4px_0_#581c87] p-4 text-center">
+              <div className="bg-purple-100 border-4 border-purple-600 shadow-[4px_4px_0_#581c87] p-2 text-center flex flex-col items-center justify-center">
                 <div className="font-silkscreen text-sm font-bold text-purple-800 uppercase">
                   {currentQuestion + 1}/{totalQuestions}
                 </div>
@@ -251,16 +269,36 @@ export default function KnowledgeTriviaGamePage() {
                 YOU EARNED {score} POINTS AND LEARNED AMAZING FACTS!
               </div>
               
-              <div className="space-y-3">
-                <button
-                  onClick={handlePlayAgain}
-                  className="font-silkscreen text-xs font-bold text-white uppercase bg-orange-600 border-2 border-orange-800 shadow-[2px_2px_0_#9a3412] px-6 py-2 hover:bg-orange-500 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#9a3412] transition-all"
-                >
-                  PLAY AGAIN
-                </button>
+              <div className="space-y-4">
+                {/* Navigation Buttons */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <button
+                    onClick={() => router.push('/')}
+                    className="font-silkscreen text-xs font-bold text-white uppercase bg-green-600 border-2 border-green-800 shadow-[2px_2px_0_#14532d] px-4 py-2 hover:bg-green-500 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#14532d] transition-all flex items-center justify-center gap-2"
+                  >
+                    <Home className="h-3 w-3" />
+                    HOME
+                  </button>
+                  
+                  <button
+                    onClick={() => router.push('/play-game')}
+                    className="font-silkscreen text-xs font-bold text-white uppercase bg-blue-600 border-2 border-blue-800 shadow-[2px_2px_0_#1e3a8a] px-4 py-2 hover:bg-blue-500 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#1e3a8a] transition-all flex items-center justify-center gap-2"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    NEW GAME
+                  </button>
+                  
+                  <button
+                    onClick={handlePlayAgain}
+                    className="font-silkscreen text-xs font-bold text-white uppercase bg-orange-600 border-2 border-orange-800 shadow-[2px_2px_0_#9a3412] px-4 py-2 hover:bg-orange-500 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#9a3412] transition-all flex items-center justify-center gap-2"
+                  >
+                    <Trophy className="h-3 w-3" />
+                    PLAY AGAIN
+                  </button>
+                </div>
                 
-                <div className="font-silkscreen text-xs text-gray-600 uppercase">
-                  {gameConfig.rewards.display} EARNED
+                <div className="font-silkscreen text-xs text-green-700 uppercase font-bold">
+                  {rewardsAwarded ? "✓ " : ""}REWARDS: {gameConfig.rewards.display}
                 </div>
               </div>
             </div>
