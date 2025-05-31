@@ -229,7 +229,7 @@ export default function LoginPage() {
             CAPYDATA
           </div>
           <div className="font-silkscreen text-sm text-white/90 uppercase tracking-wide drop-shadow-md">
-            EARN AND LEARN ABOUT YOURSELF WITH AI
+            EARN AND LEARN ABOUT YOUR DATA WITH AI
           </div>
         </div>
 
