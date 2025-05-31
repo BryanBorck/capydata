@@ -1,24 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LogOut, Heart, Sword, Users, User, Plus, Settings, Trophy, Activity } from "lucide-react";
+import { LogOut, Heart, Sword, Users, User, Plus, Settings, Trophy, Activity, Brain, CheckCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { useUser } from "@/providers/user-provider";
-import { useDatagotchiFetch } from "@/lib/hooks";
+import { updatePet } from "@/lib/services/pets";
+import { useDatagotchiFetch } from "@/lib/hooks/use-datagotchi-fetch";
 import { DatagotchiSuspense } from "@/components/ui/datagotchi-suspense";
-import { createRandomPet } from "@/lib/services/pets";
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user, pets, activePet, isAuthenticated, logout, refreshUserData, setActivePet } = useUser();
   
   // Separate hooks for different data sections
-  const leaderboardFetch = useDatagotchiFetch({ useCache: true });
-  const petActionsFetch = useDatagotchiFetch({ useCache: false });
-  
+  const leaderboardFetch = useDatagotchiFetch();
   const [isPerformingAction, setIsPerformingAction] = useState(false);
 
   // Redirect if not authenticated
@@ -44,78 +42,76 @@ export default function DashboardPage() {
 
   const handleLogout = async () => {
     try {
-      // Clear any API session
-      await fetch("/api/auth/logout", { method: "POST" });
-      logout();
-      toast.success("Logged out successfully");
-      router.push('/login');
+      await logout()
+      router.push('/login')
     } catch (error) {
-      console.error("Logout error:", error);
-      toast.error("Error logging out");
+      console.error('Logout error:', error)
     }
-  };
+  }
 
   const handleCreateNewPet = async () => {
-    if (!user) return;
-    
-    try {
-      const newPet = await createRandomPet(user.wallet_address);
-      toast.success(`New pet created! 🎉`);
-      await refreshUserData();
-      // Refresh leaderboard to potentially show the new pet
-      leaderboardFetch.fetchLeaderboard(10);
-    } catch (error) {
-      console.error("Error creating pet:", error);
-      toast.error("Failed to create pet. Please try again.");
-    }
-  };
+    router.push('/onboard')
+  }
 
-  const handlePetAction = async (action: 'feed' | 'train' | 'play') => {
-    if (!activePet) return;
+  const handleFeedPet = async () => {
+    if (!activePet) return
     
-    setIsPerformingAction(true);
-    
+    setIsPerformingAction(true)
     try {
-      let updates: any = {};
-      let message = '';
+      const updates = { social: Math.min(100, activePet.social + 5), streak: Math.min(100, activePet.streak + 1) };
+      const message = `${activePet.name} feels more social! +5 Social, +1 Streak`;
       
-      switch (action) {
-        case 'feed':
-          updates = { health: Math.min(100, activePet.health + 10) };
-          message = `${activePet.name} feels healthier! +10 Health`;
-          break;
-        case 'train':
-          updates = { 
-            strength: Math.min(100, activePet.strength + 8),
-            health: Math.max(0, activePet.health - 3)
-          };
-          message = `${activePet.name} got stronger! +8 Strength, -3 Health`;
-          break;
-        case 'play':
-          updates = { 
-            social: Math.min(100, activePet.social + 6),
-            health: Math.max(0, activePet.health - 2)
-          };
-          message = `${activePet.name} had fun! +6 Social, -2 Health`;
-          break;
-      }
-      
-      await petActionsFetch.updatePetStats(activePet.id, updates);
-      toast.success(message);
-      
-      // Refresh user data to update UI
-      await refreshUserData();
-      
-      // Refresh leaderboard in case rankings changed
-      leaderboardFetch.fetchLeaderboard(10);
-      
+      await updatePet(activePet.id, updates)
+      await refreshUserData()
+      toast.success(message)
     } catch (error) {
-      console.error(`Error performing ${action}:`, error);
-      toast.error(`Failed to ${action} pet. Please try again.`);
+      toast.error('Failed to feed pet')
     } finally {
-      setIsPerformingAction(false);
+      setIsPerformingAction(false)
     }
-  };
+  }
+
+  const handleTrainPet = async () => {
+    if (!activePet) return
+    
+    setIsPerformingAction(true)
+    try {
+      const updates = {
+        trivia: Math.min(100, activePet.trivia + 8),
+        streak: Math.min(100, activePet.streak + 2)
+      };
+      const message = `${activePet.name} got smarter! +8 Trivia, +2 Streak`;
+      
+      await updatePet(activePet.id, updates)
+      await refreshUserData()
+      toast.success(message)
+    } catch (error) {
+      toast.error('Failed to train pet')
+    } finally {
+      setIsPerformingAction(false)
+    }
+  }
+
+  const handlePlayWithPet = async () => {
+    if (!activePet) return
+    
+    setIsPerformingAction(true)
+    try {
+      const updates = {
+        social: Math.min(100, activePet.social + 6),
+        streak: Math.min(100, activePet.streak + 1)
+      };
+      const message = `${activePet.name} had fun! +6 Social, +1 Streak`;
+      
+      await updatePet(activePet.id, updates)
+      await refreshUserData()
+      toast.success(message)
+    } catch (error) {
+      toast.error('Failed to play with pet')
+    } finally {
+      setIsPerformingAction(false)
+    }
+  }
 
   if (!isAuthenticated || !user) {
     return null; // Will redirect in useEffect
@@ -236,8 +232,8 @@ export default function DashboardPage() {
                           </p>
                         </div>
                         <div className="text-right">
-                          <div className="text-sm font-bold text-gray-800">{pet.strength}</div>
-                          <div className="text-xs text-gray-500">STR</div>
+                          <div className="text-sm font-bold text-gray-800">{pet.streak}</div>
+                          <div className="text-xs text-gray-500">Streak</div>
                         </div>
                       </div>
                     ))}
@@ -274,7 +270,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    {(isPerformingAction || petActionsFetch.loading) && (
+                    {(isPerformingAction) && (
                       <div className="flex items-center space-x-2 text-sm text-gray-500">
                         <Activity className="h-4 w-4 animate-spin" />
                         <span>Updating...</span>
@@ -289,27 +285,27 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-3 gap-6 mb-6">
                   <div className="text-center">
                     <div className="flex justify-center mb-2">
-                      <Heart className="h-8 w-8 text-red-500" />
+                      <Brain className="h-8 w-8 text-purple-500" />
                     </div>
-                    <div className="text-2xl font-bold text-gray-800">{activePet.health}</div>
-                    <div className="text-sm text-gray-500">Health</div>
+                    <div className="text-2xl font-bold text-gray-800">{activePet.trivia}</div>
+                    <div className="text-sm text-gray-500">Trivia</div>
                     <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                       <div 
-                        className="bg-red-500 h-2 rounded-full transition-all duration-300" 
-                        style={{ width: `${activePet.health}%` }}
+                        className="bg-purple-500 h-2 rounded-full transition-all duration-300" 
+                        style={{ width: `${activePet.trivia}%` }}
                       />
                     </div>
                   </div>
                   <div className="text-center">
                     <div className="flex justify-center mb-2">
-                      <Sword className="h-8 w-8 text-orange-500" />
+                      <CheckCircle className="h-8 w-8 text-red-500" />
                     </div>
-                    <div className="text-2xl font-bold text-gray-800">{activePet.strength}</div>
-                    <div className="text-sm text-gray-500">Strength</div>
+                    <div className="text-2xl font-bold text-gray-800">{activePet.streak}</div>
+                    <div className="text-sm text-gray-500">Streak</div>
                     <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                       <div 
-                        className="bg-orange-500 h-2 rounded-full transition-all duration-300" 
-                        style={{ width: `${activePet.strength}%` }}
+                        className="bg-red-500 h-2 rounded-full transition-all duration-300" 
+                        style={{ width: `${activePet.streak}%` }}
                       />
                     </div>
                   </div>
@@ -335,8 +331,8 @@ export default function DashboardPage() {
                 <div className="flex space-x-3">
                   <Button 
                     className="flex-1" 
-                    onClick={() => handlePetAction('feed')}
-                    disabled={isPerformingAction || activePet.health >= 100}
+                    onClick={handleFeedPet}
+                    disabled={isPerformingAction || activePet.social >= 100}
                   >
                     <Heart className="h-4 w-4 mr-2" />
                     Feed Pet
@@ -344,17 +340,17 @@ export default function DashboardPage() {
                   <Button 
                     variant="outline" 
                     className="flex-1"
-                    onClick={() => handlePetAction('train')}
-                    disabled={isPerformingAction || activePet.health <= 3}
+                    onClick={handleTrainPet}
+                    disabled={isPerformingAction || activePet.trivia >= 100}
                   >
-                    <Sword className="h-4 w-4 mr-2" />
+                    <Brain className="h-4 w-4 mr-2" />
                     Train
                   </Button>
                   <Button 
                     variant="outline" 
                     className="flex-1"
-                    onClick={() => handlePetAction('play')}
-                    disabled={isPerformingAction || activePet.health <= 2}
+                    onClick={handlePlayWithPet}
+                    disabled={isPerformingAction || activePet.streak >= 100}
                   >
                     <Users className="h-4 w-4 mr-2" />
                     Play
@@ -404,12 +400,12 @@ export default function DashboardPage() {
                   
                   <div className="grid grid-cols-3 gap-2 text-xs">
                     <div className="text-center">
-                      <Heart className="h-3 w-3 text-red-500 mx-auto mb-1" />
-                      <div className="font-medium">{pet.health}</div>
+                      <Brain className="h-3 w-3 text-purple-500 mx-auto mb-1" />
+                      <div className="font-medium">{pet.trivia}</div>
                     </div>
                     <div className="text-center">
-                      <Sword className="h-3 w-3 text-orange-500 mx-auto mb-1" />
-                      <div className="font-medium">{pet.strength}</div>
+                      <CheckCircle className="h-3 w-3 text-red-500 mx-auto mb-1" />
+                      <div className="font-medium">{pet.streak}</div>
                     </div>
                     <div className="text-center">
                       <Users className="h-3 w-3 text-blue-500 mx-auto mb-1" />

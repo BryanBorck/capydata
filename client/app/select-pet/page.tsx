@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Heart, Zap, Users, CheckCircle, ChevronLeft, ChevronRight, Star, Sparkles } from "lucide-react";
+import { ArrowLeft, Heart, Zap, Users, CheckCircle, ChevronLeft, ChevronRight, Star, Sparkles, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -489,13 +489,13 @@ export default function SelectPetPage() {
                 </div>
                 
                 <div className="grid grid-cols-3 gap-2 text-center">
-                  <div className="bg-red-100 rounded p-2">
-                    <div className="font-semibold text-red-600">{selectedPet.health}</div>
-                    <div className="text-xs text-gray-600">Health</div>
+                  <div className="bg-gray-100 rounded p-2">
+                    <div className="font-semibold text-violet-600">{selectedPet.trivia}</div>
+                    <div className="text-xs text-gray-600">Trivia</div>
                   </div>
-                  <div className="bg-yellow-100 rounded p-2">
-                    <div className="font-semibold text-yellow-600">{selectedPet.strength}</div>
-                    <div className="text-xs text-gray-600">Strength</div>
+                  <div className="bg-gray-100 rounded p-2">
+                    <div className="font-semibold text-violet-600">{selectedPet.streak}</div>
+                    <div className="text-xs text-gray-600">Streak</div>
                   </div>
                   <div className="bg-blue-100 rounded p-2">
                     <div className="font-semibold text-blue-600">{selectedPet.social}</div>

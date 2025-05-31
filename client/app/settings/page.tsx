@@ -121,7 +121,6 @@ export default function SettingsPage() {
               </div>
             </CardContent>
           </Card>
-
           {/* Account Statistics */}
           <Card className="bg-white/80 backdrop-blur-sm border border-gray-200 shadow-lg">
             <CardHeader>
@@ -195,14 +194,20 @@ export default function SettingsPage() {
                         <div className="flex justify-between text-xs">
                           <span className="text-gray-600">Health:</span>
                           <span className="font-medium">{pet.health}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span className="text-gray-600">Strength:</span>
-                          <span className="font-medium">{pet.strength}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span className="text-gray-600">Social:</span>
-                          <span className="font-medium">{pet.social}</span>
+                        </div>                
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-600">Trivia:</span>
+                            <span className="font-medium">{pet.trivia}/100</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-600">Streak:</span>
+                            <span className="font-medium">{pet.streak}/100</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-600">Social:</span>
+                            <span className="font-medium">{pet.social}/100</span>
+                          </div>
                         </div>
                       </div>
                       

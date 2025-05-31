@@ -33,9 +33,12 @@ export type Database = {
           owner_wallet: string
           name: string
           rarity: 'common' | 'rare' | 'epic' | 'legendary'
-          health: number
-          strength: number
           social: number
+          trivia: number
+          science: number
+          code: number
+          trenches: number
+          streak: number
           created_at: string
         }
         Insert: {
@@ -43,9 +46,12 @@ export type Database = {
           owner_wallet: string
           name?: string
           rarity?: 'common' | 'rare' | 'epic' | 'legendary'
-          health?: number
-          strength?: number
           social?: number
+          trivia?: number
+          science?: number
+          code?: number
+          trenches?: number
+          streak?: number
           created_at?: string
         }
         Update: {
@@ -53,9 +59,12 @@ export type Database = {
           owner_wallet?: string
           name?: string
           rarity?: 'common' | 'rare' | 'epic' | 'legendary'
-          health?: number
-          strength?: number
           social?: number
+          trivia?: number
+          science?: number
+          code?: number
+          trenches?: number
+          streak?: number
           created_at?: string
         }
         Relationships: [
@@ -130,9 +139,12 @@ export type Database = {
           id: string
           pet_id: string
           source: string
-          delta_health: number
-          delta_strength: number
           delta_social: number
+          delta_trivia: number
+          delta_science: number
+          delta_code: number
+          delta_trenches: number
+          delta_streak: number
           raw_data: Json | null
           comment: string | null
           created_at: string
@@ -141,9 +153,12 @@ export type Database = {
           id?: string
           pet_id: string
           source: string
-          delta_health?: number
-          delta_strength?: number
           delta_social?: number
+          delta_trivia?: number
+          delta_science?: number
+          delta_code?: number
+          delta_trenches?: number
+          delta_streak?: number
           raw_data?: Json | null
           comment?: string | null
           created_at?: string
@@ -152,9 +167,12 @@ export type Database = {
           id?: string
           pet_id?: string
           source?: string
-          delta_health?: number
-          delta_strength?: number
           delta_social?: number
+          delta_trivia?: number
+          delta_science?: number
+          delta_code?: number
+          delta_trenches?: number
+          delta_streak?: number
           raw_data?: Json | null
           comment?: string | null
           created_at?: string
@@ -177,6 +195,8 @@ export type Database = {
           content_type: string
           content_hash: string
           metadata: Json
+          category: 'social' | 'trivia' | 'science' | 'code' | 'trenches' | 'general'
+          tags: string[]
           created_at: string
         }
         Insert: {
@@ -186,6 +206,8 @@ export type Database = {
           content_type: string
           content_hash: string
           metadata?: Json
+          category?: 'social' | 'trivia' | 'science' | 'code' | 'trenches' | 'general'
+          tags?: string[]
           created_at?: string
         }
         Update: {
@@ -195,6 +217,8 @@ export type Database = {
           content_type?: string
           content_hash?: string
           metadata?: Json
+          category?: 'social' | 'trivia' | 'science' | 'code' | 'trenches' | 'general'
+          tags?: string[]
           created_at?: string
         }
         Relationships: [
@@ -215,6 +239,8 @@ export type Database = {
           title: string | null
           content_hash: string
           metadata: Json
+          category: 'social' | 'trivia' | 'science' | 'code' | 'trenches' | 'general'
+          tags: string[]
           created_at: string
         }
         Insert: {
@@ -224,6 +250,8 @@ export type Database = {
           title?: string | null
           content_hash: string
           metadata?: Json
+          category?: 'social' | 'trivia' | 'science' | 'code' | 'trenches' | 'general'
+          tags?: string[]
           created_at?: string
         }
         Update: {
@@ -233,6 +261,8 @@ export type Database = {
           title?: string | null
           content_hash?: string
           metadata?: Json
+          category?: 'social' | 'trivia' | 'science' | 'code' | 'trenches' | 'general'
+          tags?: string[]
           created_at?: string
         }
         Relationships: []
@@ -268,17 +298,14 @@ export type Database = {
         Row: {
           datainstance_id: string
           knowledge_id: string
-          created_at: string
         }
         Insert: {
           datainstance_id: string
           knowledge_id: string
-          created_at?: string
         }
         Update: {
           datainstance_id?: string
           knowledge_id?: string
-          created_at?: string
         }
         Relationships: [
           {
@@ -301,17 +328,14 @@ export type Database = {
         Row: {
           datainstance_id: string
           image_id: string
-          created_at: string
         }
         Insert: {
           datainstance_id: string
           image_id: string
-          created_at?: string
         }
         Update: {
           datainstance_id?: string
           image_id?: string
-          created_at?: string
         }
         Relationships: [
           {
@@ -330,6 +354,45 @@ export type Database = {
           }
         ]
       }
+      skill_boosts: {
+        Row: {
+          id: string
+          category: 'social' | 'trivia' | 'science' | 'code' | 'trenches' | 'general'
+          data_type: string
+          social_boost: number
+          trivia_boost: number
+          science_boost: number
+          code_boost: number
+          trenches_boost: number
+          streak_boost: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          category: 'social' | 'trivia' | 'science' | 'code' | 'trenches' | 'general'
+          data_type: string
+          social_boost?: number
+          trivia_boost?: number
+          science_boost?: number
+          code_boost?: number
+          trenches_boost?: number
+          streak_boost?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          category?: 'social' | 'trivia' | 'science' | 'code' | 'trenches' | 'general'
+          data_type?: string
+          social_boost?: number
+          trivia_boost?: number
+          science_boost?: number
+          code_boost?: number
+          trenches_boost?: number
+          streak_boost?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -339,9 +402,90 @@ export type Database = {
     }
     Enums: {
       rarity_t: 'common' | 'rare' | 'epic' | 'legendary'
+      data_category_t: 'social' | 'trivia' | 'science' | 'code' | 'trenches' | 'general'
     }
     CompositeTypes: {
       [_ in never]: never
     }
   }
-} 
+}
+
+export type Tables<
+  PublicTableNameOrOptions extends
+    | keyof (Database["public"]["Tables"] & Database["public"]["Views"])
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+        Database[PublicTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+      Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : PublicTableNameOrOptions extends keyof (Database["public"]["Tables"] &
+        Database["public"]["Views"])
+    ? (Database["public"]["Tables"] &
+        Database["public"]["Views"])[PublicTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  PublicTableNameOrOptions extends
+    | keyof Database["public"]["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : PublicTableNameOrOptions extends keyof Database["public"]["Tables"]
+    ? Database["public"]["Tables"][PublicTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  PublicTableNameOrOptions extends
+    | keyof Database["public"]["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : PublicTableNameOrOptions extends keyof Database["public"]["Tables"]
+    ? Database["public"]["Tables"][PublicTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  PublicEnumNameOrOptions extends
+    | keyof Database["public"]["Enums"]
+    | { schema: keyof Database },
+  EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = PublicEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : PublicEnumNameOrOptions extends keyof Database["public"]["Enums"]
+    ? Database["public"]["Enums"][PublicEnumNameOrOptions]
+    : never 
