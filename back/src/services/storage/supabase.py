@@ -178,12 +178,19 @@ class Supabase:
     
     def create_datainstance(self, datainstance: DataInstance) -> Dict[str, Any]:
         """Create a new DataInstance for a pet."""
+        # Extract category and tags from metadata if present
+        metadata = datainstance.metadata or {}
+        category = metadata.pop("category", "general")  # Remove from metadata and use as column
+        tags = metadata.pop("tags", [])  # Remove from metadata and use as column
+        
         data = {
             "pet_id": datainstance.pet_id,
             "content": datainstance.content,
             "content_type": datainstance.content_type,
             "content_hash": self._hash_content(datainstance.content),
-            "metadata": datainstance.metadata,
+            "metadata": metadata,  # Now without category and tags
+            "category": category,
+            "tags": tags,
             "created_at": datainstance.created_at.isoformat()
         }
         
@@ -528,16 +535,25 @@ class Supabase:
         content_type: str,
         knowledge_list: List[Dict[str, str]] = None,
         image_urls: List[str] = None,
-        metadata: Dict[str, Any] = None
+        metadata: Dict[str, Any] = None,
+        category: str = "general",
+        tags: List[str] = None
     ) -> Dict[str, Any]:
         """
         Convenience method to create a DataInstance with all its relations at once.
         """
+        # Prepare metadata to include category and tags
+        final_metadata = metadata or {}
+        
+        # Add category and tags to metadata
+        final_metadata["category"] = category
+        final_metadata["tags"] = tags or []
+        
         datainstance = DataInstance(
             pet_id=pet_id,
             content=content,
             content_type=content_type,
-            metadata=metadata or {}
+            metadata=final_metadata
         )
         
         instance_result = self.create_datainstance(datainstance)
