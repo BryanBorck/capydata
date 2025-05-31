@@ -5,12 +5,8 @@ from pathlib import Path
 from typing import Any
 
 class Database(ABC):
-    """Abstract base class for any persistent storage layer used by Datagotchi.
-
-    Concrete implementations should take care of persisting and retrieving binary data
-    but MUST remain agnostic regarding the data semantics. The service layer above it
-    will transform domain objects (datasets, images, etc.) to raw bytes before calling
-    these primitives.
+    """
+    Abstract base class for any persistent storage layer used by Datagotchi.
     """
 
     @abstractmethod

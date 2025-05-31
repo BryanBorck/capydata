@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.config import settings, SHOW_DOCS_ENVIRONMENT
 from src.routes import scraper
 from src.routes import storage as storage_routes
+from src.routes import ai as ai_routes
 
 
 def create_app() -> FastAPI:
@@ -26,7 +27,7 @@ def create_app() -> FastAPI:
     # Enable CORS (allow all origins by default for development)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # TODO: replace with specific domains in production
+        allow_origins=["*"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -35,6 +36,7 @@ def create_app() -> FastAPI:
     # Include routers
     app.include_router(scraper.router, prefix="/api/v1")
     app.include_router(storage_routes.router, prefix="/api/v1")
+    app.include_router(ai_routes.router, prefix="/api/v1")
     
     # Root endpoint
     @app.get("/", tags=["Root"])

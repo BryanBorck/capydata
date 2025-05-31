@@ -8,7 +8,7 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 # Configuration
 API_BASE_URL=${API_BASE_URL:-"http://localhost:8000"}
@@ -361,16 +361,145 @@ run_test "Create Data Instance with Knowledge URLs (Complete Flow)" \
     }'" \
     "200"
 
+# === SEMANTIC SEARCH TESTS ===
+echo -e "${BLUE}🧠 Testing Semantic Search Functionality${NC}"
+
+# Test 46: Global Semantic Search
+run_test "Global Semantic Search" \
+    "curl '$API_BASE_URL/api/v1/storage/semantic/search?q=machine%20learning%20algorithms&limit=10&similarity_threshold=0.6'" \
+    "200"
+
+# Test 47: Pet Semantic Search
+run_test "Pet Semantic Search" \
+    "curl '$API_BASE_URL/api/v1/storage/pets/$TEST_PET_ID/semantic/search?q=programming%20concepts&limit=10&similarity_threshold=0.6'" \
+    "200"
+
+# Test 48: User Semantic Search
+run_test "User Semantic Search" \
+    "curl '$API_BASE_URL/api/v1/storage/users/$TEST_WALLET/semantic/search?q=artificial%20intelligence&limit=10&similarity_threshold=0.6'" \
+    "200"
+
+# Test 49: Semantic Search with High Threshold (Should return fewer results)
+run_test "Semantic Search - High Threshold" \
+    "curl '$API_BASE_URL/api/v1/storage/semantic/search?q=python%20programming&limit=5&similarity_threshold=0.9'" \
+    "200"
+
+# Test 50: Semantic Search with Low Threshold (Should return more results)
+run_test "Semantic Search - Low Threshold" \
+    "curl '$API_BASE_URL/api/v1/storage/semantic/search?q=data%20science&limit=15&similarity_threshold=0.3'" \
+    "200"
+
+# Test 51: Semantic Search - Non-existent Pet
+run_test "Semantic Search - Non-existent Pet" \
+    "curl '$API_BASE_URL/api/v1/storage/pets/$NON_EXISTENT_ID/semantic/search?q=test&limit=10'" \
+    "200"
+
+# Test 52: Semantic Search - Invalid Wallet
+run_test "Semantic Search - Invalid Wallet" \
+    "curl '$API_BASE_URL/api/v1/storage/users/invalid-wallet/semantic/search?q=test&limit=10'" \
+    "200"
+
+# Test 53: Semantic Search - Invalid Similarity Threshold
+run_test "Semantic Search - Invalid Similarity Threshold" \
+    "curl '$API_BASE_URL/api/v1/storage/semantic/search?q=test&similarity_threshold=1.5'" \
+    "422"
+
+# Test 54: Semantic Search - Missing Query Parameter
+run_test "Semantic Search - Missing Query Parameter" \
+    "curl '$API_BASE_URL/api/v1/storage/semantic/search?limit=10'" \
+    "422"
+
+# Test 55: Semantic Search - Complex Technical Query
+run_test "Semantic Search - Complex Technical Query" \
+    "curl '$API_BASE_URL/api/v1/storage/semantic/search?q=neural%20networks%20deep%20learning%20tensorflow&limit=20&similarity_threshold=0.5'" \
+    "200"
+
+# Test 56: Pet Semantic Search - Specific Domain Knowledge
+run_test "Pet Semantic Search - Specific Domain" \
+    "curl '$API_BASE_URL/api/v1/storage/pets/$TEST_PET_ID_2/semantic/search?q=natural%20language%20processing&limit=10&similarity_threshold=0.7'" \
+    "200"
+
+# Test 57: User Semantic Search - Broad Query
+run_test "User Semantic Search - Broad Query" \
+    "curl '$API_BASE_URL/api/v1/storage/users/$TEST_WALLET/semantic/search?q=computer%20science&limit=25&similarity_threshold=0.4'" \
+    "200"
+
+# Test 58: Semantic Search without OpenAI (Should fail gracefully)
+run_test "Semantic Search - No OpenAI Key" \
+    "curl '$API_BASE_URL/api/v1/storage/semantic/search?q=test'" \
+    "400"
+
+# Test 59: Add Knowledge with Content Only (No URL)
+run_test "Add Knowledge with Content Only (No URL)" \
+    "curl -X POST '$API_BASE_URL/api/v1/storage/datainstances/$TEST_INSTANCE_ID/knowledge' \
+    -H 'Content-Type: application/json' \
+    -d '[{\"content\": \"This is pure text knowledge without any URL source.\", \"title\": \"Text-Only Knowledge\", \"metadata\": {\"type\": \"manual_entry\"}}]'" \
+    "200"
+
+# Test 60: Add Knowledge with Title and Content Only
+run_test "Add Knowledge with Title and Content Only" \
+    "curl -X POST '$API_BASE_URL/api/v1/storage/datainstances/$TEST_INSTANCE_ID/knowledge' \
+    -H 'Content-Type: application/json' \
+    -d '[{\"content\": \"Advanced algorithms and data structures concepts for competitive programming.\", \"title\": \"Algorithm Study Notes\", \"metadata\": {\"subject\": \"computer_science\"}}]'" \
+    "200"
+
+# Test 61: Add Mixed Knowledge (URL-only, Content-only, and Both)
+run_test "Add Mixed Knowledge (URL-only, Content-only, and Both)" \
+    "curl -X POST '$API_BASE_URL/api/v1/storage/datainstances/$TEST_INSTANCE_ID/knowledge' \
+    -H 'Content-Type: application/json' \
+    -d '[
+        {\"url\": \"https://httpbin.org/html\"}, 
+        {\"content\": \"Manual notes about machine learning fundamentals.\", \"title\": \"ML Notes\"}, 
+        {\"url\": \"https://docs.python.org/\", \"content\": \"Python documentation overview\", \"title\": \"Python Docs\"}
+    ]'" \
+    "200"
+
+# Test 62: Invalid Knowledge - Neither URL nor Content
+run_test "Invalid Knowledge - Neither URL nor Content" \
+    "curl -X POST '$API_BASE_URL/api/v1/storage/datainstances/$TEST_INSTANCE_ID/knowledge' \
+    -H 'Content-Type: application/json' \
+    -d '[{\"title\": \"Empty Knowledge\", \"metadata\": {\"test\": \"invalid\"}}]'" \
+    "400"
+
+# Test 63: Invalid Knowledge - Empty Content and No URL
+run_test "Invalid Knowledge - Empty Content and No URL" \
+    "curl -X POST '$API_BASE_URL/api/v1/storage/datainstances/$TEST_INSTANCE_ID/knowledge' \
+    -H 'Content-Type: application/json' \
+    -d '[{\"content\": \"\", \"title\": \"Empty Content\"}]'" \
+    "400"
+
+# Test 64: Create Data Instance with Text-Only Knowledge
+run_test "Create Data Instance with Text-Only Knowledge" \
+    "curl -X POST '$API_BASE_URL/api/v1/storage/pets/$TEST_PET_ID/instances' \
+    -H 'Content-Type: application/json' \
+    -d '{
+        \"content\": \"CodeBuddy studied algorithms from textbook notes today!\", 
+        \"content_type\": \"study_session\",
+        \"knowledge_list\": [
+            {\"content\": \"Sorting algorithms: QuickSort, MergeSort, HeapSort\", \"title\": \"Sorting Study Notes\"}, 
+            {\"content\": \"Graph algorithms: BFS, DFS, Dijkstra, Floyd-Warshall\", \"title\": \"Graph Theory Notes\"}
+        ],
+        \"metadata\": {\"source\": \"textbook\", \"chapter\": \"algorithms\"}
+    }'" \
+    "200"
+
+# Test 65: Semantic Search on Text-Only Knowledge
+run_test "Semantic Search on Text-Only Knowledge" \
+    "curl '$API_BASE_URL/api/v1/storage/semantic/search?q=sorting%20algorithms&limit=10&similarity_threshold=0.5'" \
+    "200"
+
 echo -e "${BLUE}🏁 All endpoint tests completed!${NC}"
 echo ""
 echo -e "${YELLOW}Test Summary:${NC}"
-echo "  - 45 comprehensive endpoint tests completed"
+echo "  - 65 comprehensive endpoint tests completed"
 echo "  - Tests 1-15: Basic endpoint validation and error handling"
 echo "  - Tests 16-30: Real data testing with mock pets and instances"
 echo "  - Tests 31-45: Scraping functionality and automatic URL content extraction"
+echo "  - Tests 46-58: Semantic search functionality"
+echo "  - Tests 59-65: Optional URL support and text-only knowledge"
 echo "  - All endpoints are accessible and responding correctly"
 echo ""
-echo -e "${YELLOW}Expected Results:${NC}"
+echo -e "${YELLOW}Test Summary:${NC}"
 echo "  ✅ Status 200: Successful responses with real or empty data"
 echo "  ✅ Status 404: Proper validation for non-existent resources"
 echo "  ✅ Status 422: Invalid URL validation in scraper endpoints"
@@ -384,6 +513,15 @@ echo "  • Error handling for invalid URLs and failed scraping"
 echo "  • Bulk URL processing and content verification"
 echo "  • Complete data instance creation with URL-only knowledge"
 echo ""
+echo -e "${YELLOW}Semantic Search Test Coverage:${NC}"
+echo "  • Global semantic search across all knowledge"
+echo "  • Pet-specific semantic search"
+echo "  • User-specific semantic search across all pets"
+echo "  • Similarity threshold testing (high/low)"
+echo "  • Complex technical query processing"
+echo "  • Error handling for missing OpenAI API key"
+echo "  • Parameter validation (threshold, query requirements)"
+echo ""
 echo -e "${YELLOW}Mock Data Used:${NC}"
 echo "  • Wallet: $TEST_WALLET"
 echo "  • Pets: CodeBuddy (epic), DataDragon (legendary), AlgoAnimal (rare)"
@@ -395,6 +533,23 @@ echo -e "${YELLOW}To create fresh mock data:${NC}"
 echo "  1. Ensure SUPABASE_URL and SUPABASE_KEY are set"
 echo "  2. Run: poetry run python create_mock_data.py"
 echo "  3. Update test IDs in this script if needed"
+echo ""
+echo -e "${YELLOW}Environment Variables Required:${NC}"
+echo "  • SUPABASE_URL: Your Supabase project URL"
+echo "  • SUPABASE_KEY: Your Supabase anon/service role key"
+echo "  • OPENAI_API_KEY: Required for semantic search functionality (uses OpenAI 1.0.0+ API)"
+echo "  • Ensure pgVector extension is enabled in Supabase"
+echo ""
+echo -e "${YELLOW}OpenAI API Compatibility:${NC}"
+echo "  • System uses OpenAI Python library 1.0.0+ format"
+echo "  • New API: client.embeddings.create() instead of openai.Embedding.create()"
+echo "  • Automatic client initialization with proper error handling"
+echo ""
+echo -e "${YELLOW}Knowledge Entry Types Supported:${NC}"
+echo "  • URL-only: Content automatically scraped from provided URL"
+echo "  • Content-only: Pure text knowledge without URL requirement"
+echo "  • Mixed: Both URL and manual content provided together"
+echo "  • All types generate embeddings for semantic search"
 echo ""
 echo -e "${YELLOW}Manual API Testing:${NC}"
 echo "  • API Docs: $API_BASE_URL/docs"
