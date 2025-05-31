@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Database, Settings, Heart, Zap, Users, PawPrint, BarChart3, Brain, Sword, Beaker, Code, Flame, Gamepad2 } from "lucide-react";
+import { Plus, Database, Settings, Heart, Zap, Users, PawPrint, BarChart3, Brain, Sword, Beaker, Code, Flame } from "lucide-react";
 import { AnimatedShinyText } from "@/components/magicui/animated-shiny-text";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -172,29 +172,24 @@ export default function HomePage() {
         );
       case 'rare':
         return (
-          <div className="w-6 h-6 bg-gradient-to-br from-blue-400 to-blue-600 border-2 border-blue-800 shadow-lg relative transform rotate-45">
-            <div className="absolute inset-0.5 bg-gradient-to-br from-blue-300 to-blue-500 opacity-60"></div>
-            <div className="absolute top-0.5 left-0.5 w-1 h-1 bg-white opacity-90"></div>
+          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-300 to-blue-500 border-2 border-blue-600 shadow-lg relative">
+            <div className="absolute inset-1 rounded-full bg-gradient-to-br from-blue-200 to-blue-400 opacity-60"></div>
+            <div className="absolute top-1 left-1 w-1.5 h-1.5 rounded-full bg-white opacity-80"></div>
           </div>
         );
       case 'epic':
         return (
-          <div
-            className="w-5 h-7 bg-gradient-to-b from-violet-400 to-violet-600 border-2 border-violet-800 shadow-lg relative"
-            style={{ clipPath: "polygon(50% 0%, 0% 100%, 100% 100%)" }}
-          >
-            <div className="absolute inset-0.5 bg-gradient-to-b from-violet-300 to-violet-500 opacity-60"></div>
-            <div className="absolute top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white opacity-90"></div>
+          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-300 to-violet-500 border-2 border-violet-600 shadow-lg relative">
+            <div className="absolute inset-1 rounded-full bg-gradient-to-br from-violet-200 to-violet-400 opacity-60"></div>
+            <div className="absolute top-1 left-1 w-1.5 h-1.5 rounded-full bg-white opacity-80"></div>
           </div>
         );
       case 'legendary':
         return (
-          <div className="w-6 h-6 bg-gradient-to-br from-yellow-400 to-orange-500 border-2 border-orange-700 shadow-lg relative">
-            <div className="absolute inset-0.5 bg-gradient-to-br from-yellow-300 to-orange-400 opacity-70"></div>
-            <div className="absolute inset-1 bg-gradient-to-br from-yellow-200 to-orange-300 opacity-50"></div>
-            <div className="absolute top-1 left-1 w-1 h-1 bg-white opacity-95"></div>
-            <div className="absolute bottom-1 right-1 w-0.5 h-0.5 bg-white opacity-80"></div>
-          </div>
+          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-orange-300 to-orange-500 border-2 border-orange-600 shadow-lg relative">
+          <div className="absolute inset-1 rounded-full bg-gradient-to-br from-orange-200 to-orange-400 opacity-60"></div>
+          <div className="absolute top-1 left-1 w-1.5 h-1.5 rounded-full bg-white opacity-80"></div>
+        </div>
         );
       default:
         return (
@@ -256,12 +251,12 @@ export default function HomePage() {
       </div>
       
       {/* Top Header Bar */}
-      <header className="relative z-10 px-3 py-2 bg-white/60 backdrop-blur-sm border-b border-white/60 rounded-b-3xl">
+      <header className="relative z-10 px-3 py-2 bg-gradient-to-r from-violet-500 to-violet-600 border-1 border-violet-800 shadow-[1px_1px_0_#581c87]">
         <div className="flex items-center justify-between relative">
           {/* Left: App Name */}
           <div className="flex items-center space-x-1 sm:space-x-2">
-            <div className="text-xs font-bold text-violet-500 uppercase">
-              Datagotchi
+            <div className="font-silkscreen text-sm font-bold text-white uppercase tracking-wider drop-shadow-lg">
+              {APP_NAME}
             </div>
           </div>
 
@@ -275,14 +270,12 @@ export default function HomePage() {
 
           {/* Right: Settings only */}
           <div className="flex items-center">
-            <Button
-              variant="outline"
-              size="sm"
+            <button
               onClick={() => router.push('/settings')}
-              className="bg-white/30 border-white/60 text-violet-500 hover:bg-white/40 px-1.5 sm:px-2"
+              className="font-silkscreen h-8 w-8 text-white font-bold uppercase bg-gray-500 border-2 border-gray-700 shadow-[2px_2px_0_#374151] hover:bg-gray-300 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151] transition-all flex items-center justify-center"
             >
-              <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
-            </Button>
+              <Settings className="h-4 w-4" />
+            </button>
           </div>
         </div>
       </header>
@@ -293,28 +286,28 @@ export default function HomePage() {
            {/* Pet Action Buttons */}
            <div className="flex flex-row items-start space-x-2 pb-2">
             {/* Select Pet Button */}
-            <div
+            <button
               onClick={() => router.push("/select-pet")}
-              className="h-8 w-8 flex items-center justify-center text-white border-0 shadow-lg transition-all hover:scale-105 rounded-xl bg-violet-500 hover:bg-violet-600 p-0 cursor-pointer"
+              className="font-silkscreen h-8 w-8 flex items-center justify-center text-white border-2 border-gray-700 shadow-[2px_2px_0_#374151] transition-all hover:bg-gray-300 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151] bg-gray-500 cursor-pointer"
             >
               <PawPrint className="h-4 w-4" />
-            </div>
+            </button>
 
             {/* Create Pet Button */}
-            <div
+            <button
               onClick={() => router.push("/create-pet")}
-              className="h-8 w-8 flex items-center justify-center text-white border-0 shadow-lg transition-all hover:scale-105 rounded-xl bg-violet-500 hover:bg-violet-600 p-0"
+              className="font-silkscreen h-8 w-8 flex items-center justify-center text-white border-2 border-gray-700 shadow-[2px_2px_0_#374151] transition-all hover:bg-gray-300 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151] bg-gray-500"
             >
               <Plus className="h-4 w-4" />
-            </div>
+            </button>
           </div>
 
           {/* Pet Name and Rarity */}
-          <div className="flex items-center justify-end space-x-1 bg-white/70 backdrop-blur-sm p-1 rounded-sm border border-white/60 shadow-lg">
+          <div className="flex items-center justify-end space-x-1 bg-white border-2 border-gray-800 shadow-[2px_2px_0_#374151] p-2">
             <div className="relative w-8 h-8 flex items-center justify-center">
               {getRarityGem(selectedPet.rarity)}
             </div>
-            <div className="text-sm font-bold text-green-900 min-w-[5ch] text-left">{selectedPet.name}</div>
+            <div className="font-silkscreen text-sm font-bold text-gray-800 min-w-[5ch] text-left">{selectedPet.name}</div>
           </div>
           
           {/* Skills */}
@@ -335,7 +328,7 @@ export default function HomePage() {
               <span className="font-silkscreen text-base font-bold text-blue-700 w-[3ch] text-right">{selectedPet.code}</span>
             </div>
 
-            {/* Streak */}
+            {/* Social */}
             <div className="flex items-center justify-end space-x-2 bg-white/90 backdrop-blur-sm pr-2 rounded-full w-fit">
               <div className="flex items-center justify-center bg-violet-500 border-2 border-violet-700 shadow-[2px_2px_0_#4c1d95] p-1">
                 <Users className="h-5 w-5 text-white" />
@@ -385,22 +378,10 @@ export default function HomePage() {
       )}
 
       {/* Action Buttons - Individual positioning like game buttons */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 px-3 sm:px-4">
-        {/* Add Data Button - Bottom Center */}
-        <Button
-          onClick={() => selectedPet && router.push("/add-data")}
-          disabled={!selectedPet}
-          className={cn(
-            "absolute bottom-12 left-1/2 transform -translate-x-1/2 w-28 h-10 flex flex-row items-center justify-center space-x-1 text-white border-0 shadow-lg transition-all hover:scale-105 rounded-xl text-base bg-violet-500 hover:bg-violet-600",
-            !selectedPet && "opacity-50 cursor-not-allowed"
-          )}
-        >
-          <Database className="h-4 w-4 sm:h-5 sm:w-5" />
-          <span className="font-semibold">Add Data</span>
-        </Button>
+      <div className="absolute bottom-16 left-0 right-0 z-20 px-3 flex flex-row items-center justify-center space-x-4">
 
-        {/* Insights Button - Bottom Right-Center */}
-        <Button
+        {/* Insights Button - Bottom Left */}
+        <button 
           onClick={() => selectedPet && router.push("/data-insights")}
           disabled={!selectedPet}
           className={cn(
@@ -408,12 +389,11 @@ export default function HomePage() {
             !selectedPet && "opacity-50 cursor-not-allowed"
           )}
         >
-          <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
-          <span className="font-semibold">Insights</span>
-        </Button>
+          INSIGHTS
+        </button>
 
-        {/* Play Game Button - Bottom Right */}
-        <Button
+        {/* Claim Button - Bottom Right */}
+        <button 
           onClick={() => selectedPet && router.push("/play-game")}
           disabled={!selectedPet}
           className={cn(
@@ -421,9 +401,8 @@ export default function HomePage() {
             !selectedPet && "opacity-50 cursor-not-allowed"
           )}
         >
-          <Gamepad2 className="h-4 w-4 sm:h-5 sm:w-5" />
-          <span className="font-semibold">Claim</span>
-        </Button>
+          CLAIM
+        </button>
       </div>
     </main>
   );
