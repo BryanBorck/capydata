@@ -83,10 +83,10 @@ export default function ChatPanel({
                   </div>
                 ) : knowledgeSummary ? (
                   <>
-                    <h1 className="font-silkscreen text-lg font-bold text-gray-800 uppercase mb-2">
+                    <h1 className="font-silkscreen text-sm text-gray-800 uppercase mb-2">
                       {knowledgeSummary.title}
                     </h1>
-                    <p className="font-silkscreen text-xs text-gray-600 leading-relaxed mb-4 uppercase">
+                    <p className="font-silkscreen text-sm text-gray-600 leading-relaxed mb-4 uppercase">
                       {knowledgeSummary.summary}
                     </p>
                     <div className="flex items-center space-x-3">
