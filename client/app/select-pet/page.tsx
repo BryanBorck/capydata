@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Heart, Zap, Users, CheckCircle, ChevronLeft, ChevronRight, Star, Sparkles, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useUser } from "@/providers/user-provider";
 import { cn } from "@/lib/utils";
@@ -279,111 +280,146 @@ export default function SelectPetPage() {
           <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xl font-bold text-gray-700">Select Pet</div>
       </header>
 
-      {/* Content */}
-      <main className="w-full mx-auto p-4 space-y-6">
-        <div className="text-center w-full">
-          <p className="text-gray-700 text-sm">
-            Select which pet you'd like to focus on. <br /> Your active pet will be featured on the home screen.
+      {/* Carousel Container */}
+      <main className="max-w-md mx-auto p-4 flex flex-col justify-center min-h-[calc(100vh-120px)]">
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Choose Your Active Pet</h2>
+          <p className="text-gray-600 text-sm">
+            Swipe or use arrows to browse your pets
           </p>
-          {activePetId && (
-            <p className="text-sm text-violet-500 mt-2">
-              Currently active: <span className="font-semibold">
-                {pets.find(p => p.id === activePetId)?.name || 'Unknown'}
-              </span>
-            </p>
-          )}
         </div>
 
-        {/* Pet Grid */}
-        <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {pets.map((pet) => {
-            const isActive = pet.id === activePetId;
-            
-            return (
-              <Card
-                key={pet.id}
-                className={cn(
-                  "cursor-pointer transition-all hover:shadow-lg",
-                  getRarityColor(pet.rarity),
-                  isActive && "ring-2 ring-green-500"
-                )}
-                onClick={() => selectPet(pet)}
-              >
-                {isActive && (
-                  <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-                    Active
-                  </div>
-                )}
-                
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{pet.name}</CardTitle>
-                    <Badge className={getRarityBadgeColor(pet.rarity)}>
-                      {pet.rarity}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    Born {new Date(pet.created_at).toLocaleDateString()}
-                  </p>
-                </CardHeader>
-                
-                <CardContent className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <div className="flex items-center justify-center rounded-full bg-purple-100 p-1">
-                        <Brain className="h-4 w-4 text-purple-600" />
-                      </div>
-                      <span className="text-sm font-medium">Trivia</span>
-                    </div>
-                    <span className="text-sm font-bold text-gray-700">{pet.trivia}</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <div className="flex items-center justify-center rounded-full bg-red-100 p-1">
-                        <CheckCircle className="h-4 w-4 text-red-600" />
-                      </div>
-                      <span className="text-sm font-medium">Streak</span>
-                    </div>
-                    <span className="text-sm font-bold text-gray-700">{pet.streak}</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <div className="flex items-center justify-center rounded-full bg-blue-100 p-1">
-                        <Users className="h-4 w-4 text-blue-600" />
-                      </div>
-                      <span className="text-sm font-medium">Social</span>
-                    </div>
-                    <span className="text-sm font-bold text-gray-700">{pet.social}</span>
-                  </div>
+        {/* Pokemon-style Card */}
+        <div className="relative">
+          <Card className={cn(
+            "relative overflow-hidden border-4 shadow-xl transform transition-all duration-300",
+            `bg-gradient-to-br ${getRarityColor(currentPet.rarity)}`,
+            isActive && "ring-4 ring-green-400 ring-offset-2"
+          )}>
+            {/* Rarity Background Pattern */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.8),transparent_70%)]" />
+            </div>
 
-                  {/* Select Button */}
-                  <Button
-                    onClick={() => selectPet(pet)}
-                    disabled={isActive}
-                    className={cn(
-                      "w-full h-10 font-semibold transition-all mt-4",
-                      isActive 
-                        ? "bg-green-500 text-white cursor-default" 
-                        : "bg-blue-500 hover:bg-blue-600 text-white hover:shadow-lg"
-                    )}
-                  >
-                    {isActive ? (
-                      <>
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Currently Active
-                      </>
-                    ) : (
-                      <>
-                        Select {pet.name}
-                      </>
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
+            {/* Active Badge */}
+            {isActive && (
+              <div className="absolute -top-3 -right-3 bg-green-500 text-white text-xs px-3 py-1 rounded-full flex items-center space-x-1 shadow-lg z-100">
+                <CheckCircle className="h-3 w-3" />
+                <span>Active</span>
+              </div>
+            )}
+
+            <CardHeader className="relative bg-white/90 backdrop-blur-sm">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-3 mt-2">
+                  {/* Pet Image */}
+                  {/* <div className={cn(
+                    "w-16 h-16 rounded-xl flex items-center justify-center text-3xl shadow-lg",
+                    `bg-gradient-to-br ${getRarityColor(currentPet.rarity)}`
+                  )}>
+                    {getPetImage(currentPet.id, currentPet.rarity)}
+                  </div> */}
+                  
+                  {/* Pet Info */}
+                  <div>
+                    <CardTitle className="text-xl font-bold text-gray-900">
+                      {currentPet.name}
+                    </CardTitle>
+                    <p className="text-sm text-gray-600">
+                      Born {new Date(currentPet.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Rarity Badge */}
+                <Badge className={cn(
+                  "border font-semibold mt-2",
+                  getRarityBadgeColor(currentPet.rarity)
+                )}>
+                  <Star className="h-3 w-3 mr-1" />
+                  {currentPet.rarity}
+                </Badge>
+              </div>
+            </CardHeader>
+            
+            <CardContent className="relative bg-white/95 backdrop-blur-sm space-y-4 p-6">
+              {/* Stats Grid */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <Heart className="h-5 w-5 text-violet-500 mx-auto mb-1" />
+                  <div className="font-bold text-lg text-violet-500">{currentPet.health}</div>
+                  <div className="text-xs text-gray-600 uppercase tracking-wide">Health</div>
+                </div>
+                
+                <div className="text-center p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <Zap className="h-5 w-5 text-violet-500 mx-auto mb-1" />
+                  <div className="font-bold text-lg text-violet-500">{currentPet.strength}</div>
+                  <div className="text-xs text-gray-600 uppercase tracking-wide">Strength</div>
+                </div>
+                
+                <div className="text-center p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <Users className="h-5 w-5 text-violet-500 mx-auto mb-1" />
+                  <div className="font-bold text-lg text-violet-500">{currentPet.social}</div>
+                  <div className="text-xs text-gray-600 uppercase tracking-wide">Social</div>
+                </div>
+              </div>
+
+              {/* Knowledge Summary */}
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                {isLoadingSummary ? (
+                  <div className="animate-pulse">
+                    <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                  </div>
+                ) : summary ? (
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-1 flex items-center">
+                        Knowledge Base
+                        <Badge variant="secondary" className="ml-2 text-xs">
+                          {summary.knowledgeCount} sources
+                        </Badge>
+                      </h4>
+                      <p className="text-xs text-gray-600 leading-relaxed">
+                        {summary.summary}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-start space-x-3">
+                    <div className="text-lg flex-shrink-0">📚</div>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-1">Knowledge Base</h4>
+                      <p className="text-xs text-gray-600">Loading...</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Select Button */}
+              <Button
+                onClick={() => selectPet(currentPet)}
+                disabled={isActive}
+                className={cn(
+                  "w-full h-10 font-semibold transition-all",
+                  isActive 
+                    ? "bg-green-500 text-white cursor-default" 
+                    : "bg-blue-500 hover:bg-blue-600 text-white hover:shadow-lg"
+                )}
+              >
+                {isActive ? (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Currently Active
+                  </>
+                ) : (
+                  <>
+                    Select {currentPet.name}
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Carousel Controls */}
@@ -440,11 +476,15 @@ export default function SelectPetPage() {
             <div className="px-4 pb-4">
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="flex items-center space-x-3 mb-3">
-                  <div className="flex items-center space-x-2">
-                    <h4 className="font-semibold text-lg">{selectedPet.name}</h4>
-                    <Badge className={getRarityBadgeColor(selectedPet.rarity)}>
-                      {selectedPet.rarity}
-                    </Badge>
+                  <div className={cn(
+                    "w-12 h-12 rounded-full flex items-center justify-center text-xl",
+                    `bg-gradient-to-br ${getRarityColor(selectedPet.rarity)}`
+                  )}>
+                    {getPetImage(selectedPet.id, selectedPet.rarity)}
+                  </div>
+                  <div>
+                    <h4 className="font-semibold">{selectedPet.name}</h4>
+                    <p className="text-sm text-gray-600">{selectedPet.rarity} rarity</p>
                   </div>
                 </div>
                 
@@ -457,8 +497,8 @@ export default function SelectPetPage() {
                     <div className="font-semibold text-violet-600">{selectedPet.streak}</div>
                     <div className="text-xs text-gray-600">Streak</div>
                   </div>
-                  <div className="bg-gray-100 rounded p-2">
-                    <div className="font-semibold text-violet-600">{selectedPet.social}</div>
+                  <div className="bg-blue-100 rounded p-2">
+                    <div className="font-semibold text-blue-600">{selectedPet.social}</div>
                     <div className="text-xs text-gray-600">Social</div>
                   </div>
                 </div>
@@ -470,7 +510,7 @@ export default function SelectPetPage() {
             <Button
               onClick={confirmSelection}
               disabled={isLoading}
-              className="bg-violet-500 hover:bg-violet-600"
+              className="bg-blue-500 hover:bg-blue-600"
             >
               {isLoading ? (
                 <>
