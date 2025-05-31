@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Database, Gamepad2, Settings, Heart, Zap, Users, Crown, ChevronRight, ArrowLeft, PawPrint } from "lucide-react";
+import { Plus, Database, Gamepad2, Settings, Heart, Zap, Users, Crown, ChevronRight, ArrowLeft, PawPrint, BarChart3 } from "lucide-react";
 import { AnimatedShinyText } from "@/components/magicui/animated-shiny-text";
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,14 @@ function ActionButtons({ selectedPet }: { selectedPet: any }) {
       icon: Database,
       color: "from-blue-500 to-cyan-500", 
       route: "/add-data",
+      available: !!selectedPet
+    },
+    {
+      title: "Data Insights",
+      description: "Analyze your patterns",
+      icon: BarChart3,
+      color: "from-orange-500 to-amber-500",
+      route: "/data-insights",
       available: !!selectedPet
     },
     {

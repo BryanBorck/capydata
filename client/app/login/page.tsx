@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Wallet, Loader2 } from "lucide-react";
+import { Wallet, Loader2, Plus, TestTube } from "lucide-react";
 import { AnimatedShinyText } from "@/components/magicui/animated-shiny-text";
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 import { useRouter } from "next/navigation";
@@ -18,35 +18,34 @@ export default function LoginPage() {
   const router = useRouter();
   
   const { isAuthenticated, login } = useUser();
+  const isTestMode = process.env.NEXT_PUBLIC_APP_ENV === "test";
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated (only if not test mode)
   useEffect(() => {
-    if (isAuthenticated) {
+    if (!isTestMode && isAuthenticated) {
       router.push('/');
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, router, isTestMode]);
 
-  // Check MiniKit installation
+  // Check MiniKit installation (only if not test mode)
   useEffect(() => {
+    if (isTestMode) {
+      setIsLoading(false);
+      console.log("Test mode -> MiniKit check skipped");
+      return;
+    }
+
     const checkMiniKit = async () => {
-      if (
-        process.env.NEXT_PUBLIC_APP_ENV === "test" ||
-        process.env.NEXT_PUBLIC_APP_ENV === "development"
-      ) {
+      const isInstalled = MiniKit.isInstalled();
+      if (isInstalled) {
         setIsLoading(false);
-        console.log("Development/Test mode -> MiniKit check skipped");
       } else {
-        const isInstalled = MiniKit.isInstalled();
-        if (isInstalled) {
-          setIsLoading(false);
-        } else {
-          setTimeout(checkMiniKit, 1000);
-        }
+        setTimeout(checkMiniKit, 1000);
       }
     };
 
     checkMiniKit();
-  }, []);
+  }, [isTestMode]);
 
   // Handle World wallet authentication
   const handleConnectWallet = async () => {
@@ -113,18 +112,21 @@ export default function LoginPage() {
     }
   };
 
-  const handleTestMode = async () => {
+  // Test login with hardcoded wallet and pet
+  const handleTestWithData = async () => {
     setAuthLoading(true);
     try {
-      // Test login with a fake wallet address
-      const walletAddress = 'test_wallet_123';
-      const username = 'TestUser';
+      const walletAddress = '0x6b84bba6e67a124093933aba8f5b6beb96307d99';
+      const username = 'TestUserWithPet';
       
       await login(walletAddress, username);
       
-      toast.success(`Welcome ${username}! ��`);
+      // Set the active pet ID immediately
+      localStorage.setItem('activePetId', '82486b32-af21-403a-b1b8-b2aaec367d9c');
       
-      // Redirect to main page which will handle smart routing
+      toast.success(`Welcome ${username}! Your pet is ready! 🐾`);
+      
+      // Redirect to main page
       router.push('/');
     } catch (error) {
       console.error('Test login error:', error);
@@ -134,7 +136,33 @@ export default function LoginPage() {
     }
   };
 
-  if (isLoading) {
+  // Test login without data (will go to onboard)
+  const handleTestNewUser = async () => {
+    setAuthLoading(true);
+    try {
+      const walletAddress = 'test_wallet_new_user';
+      const username = 'TestNewUser';
+      
+      await login(walletAddress, username);
+      
+      toast.success(`Welcome ${username}! Let's create your first pet! ✨`);
+      
+      // Redirect to main page (will redirect to onboard since no pets)
+      router.push('/');
+    } catch (error) {
+      console.error('Test login error:', error);
+      toast.error('Test login failed');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // Direct to create pet (bypass login)
+  const handleDirectCreatePet = () => {
+    router.push('/create-pet');
+  };
+
+  if (isLoading && !isTestMode) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-8 lg:p-12 bg-gradient-to-br from-slate-50 to-gray-100">
         <div className="flex flex-col items-center justify-center text-center">
@@ -191,43 +219,99 @@ export default function LoginPage() {
         <div className="bg-white/80 backdrop-blur-sm rounded-xl p-8 border border-gray-200 shadow-lg">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Welcome!</h2>
           <p className="text-gray-600 mb-6">
-            Connect your World wallet to start your Datagotchi journey
+            {isTestMode 
+              ? "Choose how you'd like to start your Datagotchi journey"
+              : "Connect your World wallet to start your Datagotchi journey"
+            }
           </p>
 
-          {process.env.NEXT_PUBLIC_APP_ENV === "test" ? (
+          <div className="space-y-3">
+            {/* World Wallet Authentication Button */}
+            {!isTestMode && (
+              <Button
+                onClick={handleConnectWallet}
+                disabled={authLoading}
+                className="w-full py-3 font-medium"
+              >
+                {authLoading ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                    <span>Connecting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Wallet className="h-5 w-5 mr-2" />
+                    <span>Connect World Wallet</span>
+                  </>
+                )}
+              </Button>
+            )}
+
+            {/* Test Mode Buttons */}
+            {isTestMode && (
+              <>
+                <Button
+                  onClick={handleTestWithData}
+                  disabled={authLoading}
+                  className="w-full py-3 font-medium bg-green-600 hover:bg-green-700"
+                >
+                  {authLoading ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                      <span>Loading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <TestTube className="h-5 w-5 mr-2" />
+                      <span>Test with Existing Pet</span>
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  onClick={handleTestNewUser}
+                  disabled={authLoading}
+                  variant="outline"
+                  className="w-full py-3 font-medium"
+                >
+                  {authLoading ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                      <span>Loading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Wallet className="h-5 w-5 mr-2" />
+                      <span>Test as New User</span>
+                    </>
+                  )}
+                </Button>
+              </>
+            )}
+
+            {/* Direct Create Pet Button (always available) */}
             <Button
-              onClick={handleTestMode}
+              onClick={handleDirectCreatePet}
               disabled={authLoading}
+              variant="secondary"
               className="w-full py-3 font-medium"
             >
-              {authLoading ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                  <span>Testing...</span>
-                </>
-              ) : (
-                <span>Continue (Test Mode)</span>
-              )}
+              <Plus className="h-5 w-5 mr-2" />
+              <span>Create Pet Directly</span>
             </Button>
-          ) : (
-            <Button
-              onClick={handleConnectWallet}
-              disabled={authLoading}
-              className="w-full py-3 font-medium"
-            >
-              {authLoading ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                  <span>Connecting...</span>
-                </>
-              ) : (
-                <>
-                  <Wallet className="h-5 w-5 mr-2" />
-                  <span>Connect World Wallet</span>
-                </>
-              )}
-            </Button>
-          )}
+
+            {/* Test Mode Indicator */}
+            {isTestMode && (
+              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800 font-medium">
+                  🧪 Test Mode Active
+                </p>
+                <p className="text-xs text-yellow-700 mt-1">
+                  MiniKit authentication is disabled
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       
