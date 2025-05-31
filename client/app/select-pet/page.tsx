@@ -357,34 +357,33 @@ export default function SelectPetPage() {
                     </div>
                     <span className="text-sm font-bold text-gray-700">{pet.social}</span>
                   </div>
-                )}
-              </div>
 
-              {/* Select Button */}
-              <Button
-                onClick={() => selectPet(currentPet)}
-                disabled={isActive}
-                className={cn(
-                  "w-full h-12 font-semibold transition-all",
-                  isActive 
-                    ? "bg-green-500 text-white cursor-default" 
-                    : "bg-blue-500 hover:bg-blue-600 text-white hover:shadow-lg"
-                )}
-              >
-                {isActive ? (
-                  <>
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Currently Active
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Select {currentPet.name}
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
+                  {/* Select Button */}
+                  <Button
+                    onClick={() => selectPet(pet)}
+                    disabled={isActive}
+                    className={cn(
+                      "w-full h-10 font-semibold transition-all mt-4",
+                      isActive 
+                        ? "bg-green-500 text-white cursor-default" 
+                        : "bg-blue-500 hover:bg-blue-600 text-white hover:shadow-lg"
+                    )}
+                  >
+                    {isActive ? (
+                      <>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Currently Active
+                      </>
+                    ) : (
+                      <>
+                        Select {pet.name}
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         {/* Carousel Controls */}
