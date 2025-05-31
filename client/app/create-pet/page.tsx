@@ -95,7 +95,7 @@ export default function CreatePetPage() {
   const [isCreating, setIsCreating] = useState(false);
   const router = useRouter();
   
-  const { user, isAuthenticated, refreshUserData } = useUser();
+  const { user, isAuthenticated, refreshUserData, setActivePet } = useUser();
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -122,6 +122,10 @@ export default function CreatePetPage() {
       
       // Refresh user data to load the new pet
       await refreshUserData();
+      
+      // Automatically set the newly created pet as active
+      setActivePet(newPet);
+      localStorage.setItem('activePetId', newPet.id);
       
       // Auto redirect to home after success
       setTimeout(() => {
