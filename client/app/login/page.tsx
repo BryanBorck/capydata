@@ -11,6 +11,7 @@ import { MiniKit } from "@worldcoin/minikit-js";
 import { APP_NAME } from "@/lib/constants";
 import { useUser } from "@/providers/user-provider";
 import Image from "next/image";
+import Head from "next/head";
 import { cn } from "@/lib/utils";
 
 export default function LoginPage() {
@@ -20,6 +21,33 @@ export default function LoginPage() {
   
   const { isAuthenticated, login } = useUser();
   const isTestMode = process.env.NEXT_PUBLIC_APP_ENV === "test";
+
+  // Preload critical images on component mount
+  useEffect(() => {
+    const preloadImages = [
+      "/background/variants/forest.png",
+      "/background/forest.png", 
+      "/capybara/variants/default-capybara.png"
+    ];
+
+    preloadImages.forEach(src => {
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'image';
+      link.href = src;
+      document.head.appendChild(link);
+    });
+
+    // Cleanup function to remove preload links when component unmounts
+    return () => {
+      preloadImages.forEach(src => {
+        const existingLink = document.querySelector(`link[href="${src}"]`);
+        if (existingLink) {
+          document.head.removeChild(existingLink);
+        }
+      });
+    };
+  }, []);
 
   // Redirect if already authenticated (only if not test mode)
   useEffect(() => {
@@ -175,7 +203,9 @@ export default function LoginPage() {
             fill
             className="object-cover"
             priority
+            loading="eager"
             quality={90}
+            sizes="100vw"
           />
           <div className="absolute inset-0 bg-black/30" />
         </div>
@@ -200,12 +230,14 @@ export default function LoginPage() {
       {/* Forest Background */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="/background/forest.png"
+          src="/background/variants/forest.png"
           alt="Background"
           fill
           className="object-cover"
           priority
+          loading="eager"
           quality={90}
+          sizes="100vw"
         />
         {/* Overlay for better contrast */}
         <div className="absolute inset-0 bg-black/20" />
@@ -345,12 +377,15 @@ export default function LoginPage() {
         {/* Capybara Image */}
         <div className="absolute bottom-20 right-4 z-5">
           <Image
-            src="/capybara/common/default.png"
+            src="/capybara/variants/default-capybara.png"
             alt="Capybara"
             width={200}
             height={200}
             className="w-64 h-64 object-contain drop-shadow-2xl"
             priority
+            loading="eager"
+            quality={95}
+            sizes="(max-width: 768px) 200px, 256px"
           />
         </div>
       </div>
