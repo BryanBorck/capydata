@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Upload, FileText, Link, Brain, Loader2, CheckCircle, X, PawPrint, Heart, Zap, Users } from "lucide-react";
+import { ArrowLeft, Upload, FileText, Link, Brain, Loader2, CheckCircle, X, PawPrint, Heart, Zap, Users, Star, Sparkles, Search, MoreVertical, Eye, Trash2, Plus } from "lucide-react";
 import { AnimatedShinyText } from "@/components/magicui/animated-shiny-text";
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,13 @@ import { useUser } from "@/providers/user-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 
 interface DataType {
   id: string;
@@ -34,6 +41,15 @@ interface Pet {
   strength: number;
   social: number;
   created_at: string;
+}
+
+interface Knowledge {
+  id: string;
+  url?: string;
+  content: string;
+  title?: string;
+  created_at: string;
+  metadata?: Record<string, unknown>;
 }
 
 const DATA_TYPES: DataType[] = [
@@ -66,24 +82,43 @@ const DATA_TYPES: DataType[] = [
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function AddDataPage() {
-  const [selectedType, setSelectedType] = useState<string>('');
-  const [selectedPetId, setSelectedPetId] = useState<string>('');
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [url, setUrl] = useState('');
-  const [file, setFile] = useState<File | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [petKnowledge, setPetKnowledge] = useState<Knowledge[]>([]);
+  const [isLoadingKnowledge, setIsLoadingKnowledge] = useState(false);
+  const [showDataTypeDialog, setShowDataTypeDialog] = useState(false);
   
   const router = useRouter();
   const { user, isAuthenticated, pets } = useUser();
 
-  // Set default pet when pets are loaded
+  // Get active pet
+  const getActivePetId = (): string | null => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('activePetId');
+  };
+
+  const activePetId = getActivePetId();
+  const activePet = pets.find((p: Pet) => p.id === activePetId) || (pets.length > 0 ? pets[0] : null);
+
+  // Fetch pet knowledge
   useEffect(() => {
-    if (pets.length > 0 && !selectedPetId) {
-      setSelectedPetId(pets[0].id);
-    }
-  }, [pets, selectedPetId]);
+    if (!activePet) return;
+
+    const fetchPetKnowledge = async () => {
+      setIsLoadingKnowledge(true);
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/storage/pets/${activePet.id}/knowledge?limit=20`);
+        if (response.ok) {
+          const knowledge = await response.json();
+          setPetKnowledge(knowledge);
+        }
+      } catch (error) {
+        console.error('Error fetching pet knowledge:', error);
+      } finally {
+        setIsLoadingKnowledge(false);
+      }
+    };
+
+    fetchPetKnowledge();
+  }, [activePet]);
 
   // Redirect if not authenticated or no pets
   useEffect(() => {
@@ -98,216 +133,63 @@ export default function AddDataPage() {
     }
   }, [isAuthenticated, pets, router]);
 
-  const createDataInstance = async (petId: string, instanceContent: string, instanceType: string, knowledgeData?: any[]) => {
-    const payload = {
-      content: instanceContent,
-      content_type: instanceType,
-      metadata: {
-        source: 'web_app',
-        type: selectedType,
-        timestamp: new Date().toISOString()
-      },
-      knowledge_list: knowledgeData || []
-    };
-
-    const response = await fetch(`${API_BASE_URL}/api/v1/storage/pets/${petId}/instances`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
-    }
-
-    return response.json();
-  };
-
-  const handleSubmit = async () => {
-    if (!selectedType) {
-      toast.error("Please select a data type");
-      return;
-    }
-
-    if (!selectedPetId) {
-      toast.error("Please select a pet");
-      return;
-    }
-
-    if (!title.trim()) {
-      toast.error("Please enter a title");
-      return;
-    }
-
-    if (selectedType === 'text' && !content.trim()) {
-      toast.error("Please enter some content");
-      return;
-    }
-
-    if (selectedType === 'url' && !url.trim()) {
-      toast.error("Please enter a URL");
-      return;
-    }
-
-    if (selectedType === 'file' && !file) {
-      toast.error("Please select a file");
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      let result;
-      const selectedPet = pets.find((p: Pet) => p.id === selectedPetId);
-      const petName = selectedPet?.name || 'your pet';
-
-      switch (selectedType) {
-        case 'text':
-          // Create data instance with text-only knowledge
-          result = await createDataInstance(
-            selectedPetId,
-            `${petName} learned from text content: "${title}"`,
-            'learning_session',
-            [{
-              content: content,
-              title: title,
-              metadata: {
-                type: 'manual_text',
-                character_count: content.length,
-                source: 'user_input'
-              }
-            }]
-          );
-          break;
-
-        case 'url':
-          // Create data instance with URL knowledge (will be auto-scraped)
-          try {
-            // Validate URL format
-            new URL(url);
-            
-            result = await createDataInstance(
-              selectedPetId,
-              `${petName} learned from web content: "${title}"`,
-              'web_learning',
-              [{
-                url: url,
-                title: title,
-                metadata: {
-                  type: 'web_scraping',
-                  source_url: url,
-                  auto_scraped: true
-                }
-              }]
-            );
-          } catch (urlError) {
-            toast.error("Please enter a valid URL");
-            return;
-          }
-          break;
-
-        case 'file':
-          // For now, we'll convert file content to text and treat it as text content
-          // TODO: Implement proper file upload handling in the backend
-          const fileContent = await readFileAsText(file!);
-          result = await createDataInstance(
-            selectedPetId,
-            `${petName} learned from file: "${title}"`,
-            'file_learning',
-            [{
-              content: fileContent,
-              title: title,
-              metadata: {
-                type: 'file_upload',
-                filename: file!.name,
-                file_size: file!.size,
-                file_type: file!.type,
-                source: 'file_upload'
-              }
-            }]
-          );
-          break;
-
-        default:
-          throw new Error('Invalid data type selected');
-      }
-
-      console.log('Data instance created:', result);
-      
-      setSuccess(true);
-      toast.success(`Data added successfully! ${petName} gained intelligence! 🧠✨`);
-
-      // Reset form after success
-      setTimeout(() => {
-        setSuccess(false);
-        setSelectedType('');
-        setTitle('');
-        setContent('');
-        setUrl('');
-        setFile(null);
-      }, 2000);
-
-    } catch (error: any) {
-      console.error("Error adding data:", error);
-      toast.error(error.message || "Failed to add data. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const readFileAsText = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result;
-        if (typeof result === 'string') {
-          resolve(result);
-        } else {
-          resolve('File content could not be read as text');
-        }
-      };
-      reader.onerror = () => reject(new Error('Failed to read file'));
-      reader.readAsText(file);
-    });
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      // Check file size (limit to 5MB)
-      if (selectedFile.size > 5 * 1024 * 1024) {
-        toast.error("File size must be less than 5MB");
-        return;
-      }
-      setFile(selectedFile);
-    }
-  };
-
   const getRarityColor = (rarity: string) => {
     switch (rarity?.toLowerCase()) {
-      case 'common': return 'border-gray-300 bg-gray-50';
-      case 'rare': return 'border-blue-300 bg-blue-50';
-      case 'epic': return 'border-purple-300 bg-purple-50';
-      case 'legendary': return 'border-yellow-300 bg-yellow-50';
-      default: return 'border-gray-300 bg-gray-50';
+      case 'common': return 'from-gray-400 to-gray-600';
+      case 'rare': return 'from-blue-400 to-blue-600';
+      case 'epic': return 'from-purple-400 to-purple-600';
+      case 'legendary': return 'from-yellow-400 to-yellow-600';
+      default: return 'from-gray-400 to-gray-600';
     }
   };
 
   const getRarityBadgeColor = (rarity: string) => {
     switch (rarity?.toLowerCase()) {
-      case 'common': return 'bg-gray-100 text-gray-700';
-      case 'rare': return 'bg-blue-100 text-blue-700';
-      case 'epic': return 'bg-purple-100 text-purple-700';
-      case 'legendary': return 'bg-yellow-100 text-yellow-700';
-      default: return 'bg-gray-100 text-gray-700';
+      case 'common': return 'bg-gray-100 text-gray-700 border-gray-300';
+      case 'rare': return 'bg-blue-100 text-blue-700 border-blue-300';
+      case 'epic': return 'bg-purple-100 text-purple-700 border-purple-300';
+      case 'legendary': return 'bg-yellow-100 text-yellow-700 border-yellow-300';
+      default: return 'bg-gray-100 text-gray-700 border-gray-300';
     }
   };
 
+  const getPetImage = (petId: string, rarity: string) => {
+    const petEmojis = ['🐱', '🐶', '🐰', '🦊', '🐼', '🐨', '🐯', '🦁', '🐸', '🐢'];
+    const index = petId.charCodeAt(0) % petEmojis.length;
+    return petEmojis[index];
+  };
+
+  const getKnowledgeTypeIcon = (knowledge: Knowledge) => {
+    if (knowledge.url) return '🔗';
+    if (knowledge.metadata?.type === 'file_upload') return '📎';
+    return '📄';
+  };
+
+  const truncateText = (text: string, maxLength: number) => {
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+  };
+
+  const handleDataTypeSelect = (dataType: string) => {
+    setShowDataTypeDialog(false);
+    router.push(`/add-data/${dataType}?petId=${activePet?.id}`);
+  };
+
   if (!isAuthenticated || pets.length === 0) {
-    return null; // Will redirect in useEffect
+    return null;
+  }
+
+  if (!activePet) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-slate-50 to-zinc-100 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">No Active Pet</h2>
+          <p className="text-gray-600 mb-4">Please select a pet first!</p>
+          <Button onClick={() => router.push('/select-pet')}>
+            Select Pet
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -338,12 +220,12 @@ export default function AddDataPage() {
                   <span className="sm:hidden">Back</span>
                 </Button>
                 <AnimatedShinyText className="text-lg sm:text-xl lg:text-2xl font-bold truncate">
-                  Add Data
+                  Feed Your Pet
                 </AnimatedShinyText>
               </div>
               
               <Badge variant="secondary" className="text-xs flex-shrink-0">
-                Feed Your Pet
+                Add Data
               </Badge>
             </div>
           </div>
@@ -352,251 +234,227 @@ export default function AddDataPage() {
         {/* Main Content */}
         <div className="w-full px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
           <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
-            {/* Introduction */}
-            <div className="text-center">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-3 sm:mb-4">
-                Feed Your Pet with Data 🍯
-              </h1>
-              <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto">
-                Help your pet grow by sharing interesting content, links, or files. 
-                Different types of data will boost your pet's intelligence and social stats!
-              </p>
-            </div>
-
-            {/* Pet Selection */}
+            {/* Active Pet Card */}
             <div className="space-y-3 sm:space-y-4">
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-800">Select Pet to Feed</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                {pets.map((pet: Pet) => {
-                  const isSelected = pet.id === selectedPetId;
-                  
-                  return (
-                    <Card
-                      key={pet.id}
-                      className={cn(
-                        "cursor-pointer transition-all hover:shadow-lg",
-                        getRarityColor(pet.rarity),
-                        isSelected && "ring-2 ring-purple-500 bg-purple-50"
-                      )}
-                      onClick={() => setSelectedPetId(pet.id)}
-                    >
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-base flex items-center space-x-2">
-                            <PawPrint className="h-4 w-4 text-purple-500" />
-                            <span>{pet.name}</span>
-                            {isSelected && <CheckCircle className="h-4 w-4 text-purple-500" />}
-                          </CardTitle>
-                          <Badge className={getRarityBadgeColor(pet.rarity)}>
-                            {pet.rarity}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      
-                      <CardContent className="space-y-2">
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between text-xs">
-                            <div className="flex items-center space-x-1">
-                              <Heart className="h-3 w-3 text-red-500" />
-                              <span>Health</span>
-                            </div>
-                            <span>{pet.health}/100</span>
-                          </div>
-                          <Progress value={pet.health} className="h-1" />
-                        </div>
-                        
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between text-xs">
-                            <div className="flex items-center space-x-1">
-                              <Zap className="h-3 w-3 text-yellow-500" />
-                              <span>Strength</span>
-                            </div>
-                            <span>{pet.strength}/100</span>
-                          </div>
-                          <Progress value={pet.strength} className="h-1" />
-                        </div>
-                        
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between text-xs">
-                            <div className="flex items-center space-x-1">
-                              <Users className="h-3 w-3 text-blue-500" />
-                              <span>Social</span>
-                            </div>
-                            <span>{pet.social}/100</span>
-                          </div>
-                          <Progress value={pet.social} className="h-1" />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </div>
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-800">Your Active Pet</h2>
+              
+              <Card className={cn(
+                "relative overflow-hidden border-4 shadow-xl bg-gradient-to-br",
+                getRarityColor(activePet.rarity)
+              )}>
+                {/* Rarity Background Pattern */}
+                <div className="absolute inset-0 opacity-10">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.8),transparent_70%)]" />
+                </div>
 
-            {/* Data Type Selection */}
-            <div className="space-y-3 sm:space-y-4">
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-800">Choose Data Type</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                {DATA_TYPES.map((type) => (
-                  <Card 
-                    key={type.id}
-                    className={`cursor-pointer transition-all hover:shadow-lg ${
-                      selectedType === type.id 
-                        ? 'ring-2 ring-blue-500 bg-blue-50' 
-                        : 'hover:bg-gray-50'
-                    }`}
-                    onClick={() => setSelectedType(type.id)}
-                  >
-                    <CardContent className="p-4 sm:p-6">
-                      <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl mb-3 sm:mb-4 flex items-center justify-center bg-gradient-to-r ${type.color}`}>
-                        <type.icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                {/* Active Badge */}
+                <div className="absolute -top-3 -right-3 bg-green-500 text-white text-xs px-3 py-1 rounded-full flex items-center space-x-1 shadow-lg z-10">
+                  <CheckCircle className="h-3 w-3" />
+                  <span>Active</span>
+                </div>
+
+                <CardHeader className="relative bg-white/90 backdrop-blur-sm">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center space-x-3 mt-2">
+                      {/* Pet Image */}
+                      <div className={cn(
+                        "w-16 h-16 rounded-xl flex items-center justify-center text-3xl shadow-lg bg-gradient-to-br",
+                        getRarityColor(activePet.rarity)
+                      )}>
+                        {getPetImage(activePet.id, activePet.rarity)}
                       </div>
                       
-                      <h3 className="font-semibold text-gray-800 mb-2 text-sm sm:text-base">{type.title}</h3>
-                      <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">{type.description}</p>
-                      <Badge variant="secondary" className="text-xs">
-                        {type.statBoost}
-                      </Badge>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
+                      {/* Pet Info */}
+                      <div>
+                        <CardTitle className="text-xl font-bold text-gray-900">
+                          {activePet.name}
+                        </CardTitle>
+                        <p className="text-sm text-gray-600">
+                          Born {new Date(activePet.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
 
-            {/* Data Input Form */}
-            {selectedType && (
-              <Card className="bg-white/80 backdrop-blur-sm border border-gray-200 shadow-lg">
-                <CardHeader className="p-4 sm:p-6">
-                  <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
-                    <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500 flex-shrink-0" />
-                    <span className="truncate">Add {DATA_TYPES.find(t => t.id === selectedType)?.title}</span>
-                  </CardTitle>
-                  <CardDescription className="text-xs sm:text-sm">
-                    Fill in the details below to feed your pet
-                  </CardDescription>
+                    {/* Rarity Badge */}
+                    <Badge className={cn(
+                      "border font-semibold mt-2",
+                      getRarityBadgeColor(activePet.rarity)
+                    )}>
+                      <Star className="h-3 w-3 mr-1" />
+                      {activePet.rarity}
+                    </Badge>
+                  </div>
                 </CardHeader>
                 
-                <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
-                  {/* Title Field */}
-                  <div className="space-y-2">
-                    <Label htmlFor="title" className="text-xs sm:text-sm">Title *</Label>
-                    <Input
-                      id="title"
-                      type="text"
-                      placeholder="Give this data a descriptive title"
-                      value={title}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)}
-                      maxLength={100}
-                      className="text-sm sm:text-base"
-                    />
-                    <p className="text-xs text-gray-500">{title.length}/100 characters</p>
+                <CardContent className="relative bg-white/95 backdrop-blur-sm space-y-4 p-6">
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="text-center p-3 bg-red-50 rounded-lg border border-red-200">
+                      <Heart className="h-5 w-5 text-red-500 mx-auto mb-1" />
+                      <div className="font-bold text-lg text-red-600">{activePet.health}</div>
+                      <div className="text-xs text-gray-600 uppercase tracking-wide">Health</div>
+                      <Progress value={activePet.health} className="h-1 mt-1" />
+                    </div>
+                    
+                    <div className="text-center p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                      <Zap className="h-5 w-5 text-yellow-500 mx-auto mb-1" />
+                      <div className="font-bold text-lg text-yellow-600">{activePet.strength}</div>
+                      <div className="text-xs text-gray-600 uppercase tracking-wide">Strength</div>
+                      <Progress value={activePet.strength} className="h-1 mt-1" />
+                    </div>
+                    
+                    <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <Users className="h-5 w-5 text-blue-500 mx-auto mb-1" />
+                      <div className="font-bold text-lg text-blue-600">{activePet.social}</div>
+                      <div className="text-xs text-gray-600 uppercase tracking-wide">Social</div>
+                      <Progress value={activePet.social} className="h-1 mt-1" />
+                    </div>
                   </div>
 
-                  {/* Content based on type */}
-                  {selectedType === 'text' && (
-                    <div className="space-y-2">
-                      <Label htmlFor="content" className="text-xs sm:text-sm">Content *</Label>
-                      <Textarea
-                        id="content"
-                        placeholder="Enter your text content here..."
-                        value={content}
-                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setContent(e.target.value)}
-                        rows={6}
-                        maxLength={5000}
-                        className="text-sm sm:text-base"
-                      />
-                      <p className="text-xs text-gray-500">{content.length}/5000 characters</p>
-                    </div>
-                  )}
-
-                  {selectedType === 'url' && (
-                    <div className="space-y-2">
-                      <Label htmlFor="url" className="text-xs sm:text-sm">URL *</Label>
-                      <Input
-                        id="url"
-                        type="url"
-                        placeholder="https://example.com"
-                        value={url}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUrl(e.target.value)}
-                        className="text-sm sm:text-base"
-                      />
-                      <p className="text-xs text-gray-500">
-                        Share an interesting link - content will be automatically extracted!
-                      </p>
-                    </div>
-                  )}
-
-                  {selectedType === 'file' && (
-                    <div className="space-y-2">
-                      <Label htmlFor="file" className="text-xs sm:text-sm">File *</Label>
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 text-center">
-                        <input
-                          id="file"
-                          type="file"
-                          onChange={handleFileChange}
-                          className="hidden"
-                          accept=".pdf,.doc,.docx,.txt,.jpg,.png,.gif,.json,.md"
-                        />
-                        <label htmlFor="file" className="cursor-pointer">
-                          <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 mx-auto mb-2" />
-                          <p className="text-xs sm:text-sm text-gray-600">
-                            {file ? file.name : 'Click to upload a file'}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            PDF, DOC, TXT, or image files (max 5MB)
-                          </p>
-                        </label>
+                  {/* Knowledge Count */}
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Brain className="h-5 w-5 text-purple-500" />
+                        <span className="font-semibold text-gray-900">Knowledge</span>
+                        <Badge variant="secondary" className="text-xs">
+                          {petKnowledge.length} sources
+                        </Badge>
                       </div>
                     </div>
-                  )}
-
-                  {/* Submit Button */}
-                  <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
-                    <Button
-                      onClick={handleSubmit}
-                      disabled={isSubmitting || success || !selectedPetId}
-                      className="flex-1 py-2 sm:py-3 font-medium bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-sm sm:text-base"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin mr-2" />
-                          <span>Feeding Pet...</span>
-                        </>
-                      ) : success ? (
-                        <>
-                          <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                          <span>Success!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Brain className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                          <span>Feed Pet</span>
-                        </>
-                      )}
-                    </Button>
-                    
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setSelectedType('');
-                        setTitle('');
-                        setContent('');
-                        setUrl('');
-                        setFile(null);
-                      }}
-                      disabled={isSubmitting}
-                      className="sm:w-auto text-sm sm:text-base"
-                    >
-                      <X className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-                      Clear
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
-            )}
+            </div>
+
+            {/* Knowledge Sources Section */}
+            <div className="space-y-3 sm:space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-800">Sources</h2>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowDataTypeDialog(true)}
+                  className="text-xs bg-blue-500 text-white hover:bg-blue-600 border-blue-500"
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Add Entry
+                </Button>
+              </div>
+              
+              <Card className="bg-white/80 backdrop-blur-sm border border-gray-200">
+                <CardContent className="p-4">
+                  {isLoadingKnowledge ? (
+                    <div className="space-y-3">
+                      {[...Array(3)].map((_, i) => (
+                        <div key={i} className="animate-pulse">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-gray-200 rounded"></div>
+                            <div className="flex-1">
+                              <div className="h-4 bg-gray-200 rounded mb-1"></div>
+                              <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : petKnowledge.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Brain className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No Knowledge Sources Yet</h3>
+                      <p className="text-sm text-gray-600 mb-4">Start adding data to build your pet's intelligence!</p>
+                      <Button 
+                        onClick={() => setShowDataTypeDialog(true)}
+                        className="bg-blue-500 hover:bg-blue-600 text-white"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Your First Entry
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                      {petKnowledge.slice(0, 5).map((knowledge) => (
+                        <div key={knowledge.id} className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded-lg group">
+                          <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center flex-shrink-0">
+                            <span className="text-sm">{getKnowledgeTypeIcon(knowledge)}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-gray-900 truncate">
+                              {knowledge.title || knowledge.url || 'Untitled'}
+                            </div>
+                            <div className="text-xs text-gray-600 truncate">
+                              {knowledge.url ? knowledge.url : truncateText(knowledge.content, 60)}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {new Date(knowledge.created_at).toLocaleDateString()}
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      {petKnowledge.length > 5 && (
+                        <div className="pt-2 border-t border-gray-200">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="w-full text-purple-600 hover:text-purple-700"
+                            onClick={() => router.push('/data-insights')}
+                          >
+                            View {petKnowledge.length - 5} more sources
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Data Type Selection Dialog */}
+      <Drawer open={showDataTypeDialog} onOpenChange={setShowDataTypeDialog}>
+        <DrawerContent className="sm:max-w-md">
+          <DrawerHeader>
+            <DrawerTitle>Choose Data Type</DrawerTitle>
+            <DrawerDescription>
+              Select the type of data you want to add to {activePet?.name}'s knowledge base.
+            </DrawerDescription>
+          </DrawerHeader>
+          
+          <div className="space-y-3">
+            {DATA_TYPES.map((type) => (
+              <Card 
+                key={type.id}
+                className="cursor-pointer transition-all hover:shadow-md hover:bg-gray-50"
+                onClick={() => handleDataTypeSelect(type.id)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center bg-gradient-to-r ${type.color}`}>
+                      <type.icon className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-800">{type.title}</h3>
+                      <p className="text-sm text-gray-600">{type.description}</p>
+                      <Badge variant="secondary" className="text-xs mt-1">
+                        {type.statBoost}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </DrawerContent>
+      </Drawer>
       
       <Toaster />
     </main>
