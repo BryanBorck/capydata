@@ -179,7 +179,7 @@ export default function ChatPanel({
                     onClick={() => onCurrentMessageChange(question)}
                     className="font-silkscreen text-xs text-gray-800 uppercase bg-white border-2 border-gray-600 shadow-[2px_2px_0_#374151] px-3 py-1 hover:bg-gray-100 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151] transition-all whitespace-nowrap"
                   >
-                    {question.length > 30 ? question.substring(0, 30) + '...' : question}
+                    {question.length > 30 ? `${question.substring(0, 30)}...` : question}
                   </button>
                 ))}
               </div>
