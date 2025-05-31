@@ -18,8 +18,9 @@ import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/tabs";
 import { ScrollArea } from "@/components/scroll-area";
 import { Separator } from "@/components/separator";
+import { APP_NAME } from "@/lib/constants";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = 'http://localhost:8000';
 
 interface Knowledge {
   id: string;
@@ -618,180 +619,218 @@ export default function DataInsightsPage() {
   }
 
   return (
-    <div className="h-screen bg-white flex flex-col">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 flex-shrink-0">
-        <div className="flex items-center justify-between px-6 py-3">
-          <div className="flex items-center space-x-10">
-            <div className="flex items-center space-x-3">
-              <button 
-                onClick={() => router.back()}
-                className="w-8 h-8 bg-white rounded-lg flex items-center justify-center border border-gray-200 hover:bg-gray-50 transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4 text-gray-600" />
-              </button>
-            </div>
-            
-            <div className="flex items-center space-x-8">
-              <button 
-                className={cn(
-                  "text-sm font-medium pb-3 border-b-2 transition-colors",
-                  activePanel === 'sources' 
-                    ? "text-gray-900 border-blue-600" 
-                    : "text-gray-600 hover:text-gray-900 border-transparent"
-                )}
-                onClick={() => setActivePanel('sources')}
-              >
-                <div className="flex items-center space-x-5">
-                  <span className="text-md">Sources</span>
-                </div>
-              </button>
-              <button 
-                className={cn(
-                  "text-sm font-medium pb-3 border-b-2 transition-colors",
-                  activePanel === 'chat' 
-                    ? "text-gray-900 border-blue-600" 
-                    : "text-gray-600 hover:text-gray-900 border-transparent"
-                )}
-                onClick={() => setActivePanel('chat')}
-              >
-                <div className="flex items-center space-x-2">
-                  <span className="text-md">Chat</span>
-                </div>
-              </button>
-              <button 
-                className={cn(
-                  "text-sm font-medium pb-3 border-b-2 transition-colors",
-                  activePanel === 'studio' 
-                    ? "text-gray-900 border-blue-600" 
-                    : "text-gray-600 hover:text-gray-900 border-transparent"
-                )}
-                onClick={() => setActivePanel('studio')}
-              >
-                <div className="flex items-center space-x-2">
+    <main className="h-[100dvh] w-full relative overflow-hidden pb-16">
+      {/* Flickering Grid Background */}
+      <FlickeringGrid
+        className="absolute inset-0 -z-5 h-full w-full [mask-image:radial-gradient(1200px_circle_at_center,transparent,white)]"
+        squareSize={4}
+        gridGap={6}
+        color="#6B7280"
+        maxOpacity={0.5}
+        flickerChance={0.1}
+      />
 
-                  <span className="text-md">Studio</span>
-                </div>
-              </button>
-            </div>
+      {/* Top Header Bar */}
+      <header className="relative z-10 px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 border-1 border-blue-800 shadow-[1px_1px_0_#1e40af]">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => router.back()}
+            className="font-silkscreen text-xs font-bold text-white uppercase bg-blue-700 border-2 border-blue-900 shadow-[2px_2px_0_#1e40af] px-3 py-1 hover:bg-blue-600 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#1e40af] transition-all flex items-center gap-2"
+          >
+            <ArrowLeft className="h-3 w-3" />
+            BACK
+          </button>
+          
+          <div className="font-silkscreen text-sm font-bold text-white uppercase tracking-wider drop-shadow-lg">
+            {APP_NAME} - DATA INSIGHTS
           </div>
+          
+          <div className="w-16"></div> {/* Spacer for balance */}
         </div>
       </header>
 
+      {/* Navigation Tabs */}
+      <div className="relative z-10 px-6 py-4 bg-white border-b-4 border-gray-800 shadow-[0_4px_0_#374151]">
+        <div className="flex items-center space-x-4">
+          <button 
+            className={cn(
+              "font-silkscreen text-xs font-bold uppercase px-4 py-2 border-2 shadow-[2px_2px_0_#374151] transition-all",
+              activePanel === 'sources' 
+                ? "bg-blue-100 border-blue-600 text-blue-800 shadow-[2px_2px_0_#1e40af]" 
+                : "bg-gray-100 border-gray-600 text-gray-800 hover:bg-gray-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151]"
+            )}
+            onClick={() => setActivePanel('sources')}
+          >
+            <div className="flex items-center space-x-2">
+              <FileText className="h-3 w-3" />
+              <span>SOURCES</span>
+            </div>
+          </button>
+          <button 
+            className={cn(
+              "font-silkscreen text-xs font-bold uppercase px-4 py-2 border-2 shadow-[2px_2px_0_#374151] transition-all",
+              activePanel === 'chat' 
+                ? "bg-blue-100 border-blue-600 text-blue-800 shadow-[2px_2px_0_#1e40af]" 
+                : "bg-gray-100 border-gray-600 text-gray-800 hover:bg-gray-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151]"
+            )}
+            onClick={() => setActivePanel('chat')}
+          >
+            <div className="flex items-center space-x-2">
+              <MessageCircle className="h-3 w-3" />
+              <span>CHAT</span>
+            </div>
+          </button>
+          <button 
+            className={cn(
+              "font-silkscreen text-xs font-bold uppercase px-4 py-2 border-2 shadow-[2px_2px_0_#374151] transition-all",
+              activePanel === 'studio' 
+                ? "bg-blue-100 border-blue-600 text-blue-800 shadow-[2px_2px_0_#1e40af]" 
+                : "bg-gray-100 border-gray-600 text-gray-800 hover:bg-gray-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151]"
+            )}
+            onClick={() => setActivePanel('studio')}
+          >
+            <div className="flex items-center space-x-2">
+              <Sparkles className="h-3 w-3" />
+              <span>STUDIO</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden relative">
+      <div className="relative z-10 h-full overflow-hidden">
         {activePanel === 'sources' && (
-          <div className="h-full flex flex-col">
-            <div className="p-6 border-b border-gray-200">
+          <div className="h-full flex flex-col px-6 py-6">
+            <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-6 mb-6">
+              <div className="mb-6">
+                <div className="font-silkscreen text-xl font-bold text-gray-800 uppercase mb-2 flex items-center gap-3">
+                  <FileText className="h-6 w-6" />
+                  DATA SOURCES
+                </div>
+                <div className="font-silkscreen text-xs text-gray-600 uppercase">
+                  MANAGE YOUR KNOWLEDGE BASE
+                </div>
+              </div>
+              
               <div className="flex space-x-3 mb-6">
-                <Button className="bg-gray-800 hover:bg-gray-700 text-white flex-1" onClick={() => router.push('/add-data')}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add
-                </Button>
-                <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50 flex-1">
-                  <Search className="h-4 w-4 mr-2" />
-                  Discover
-                </Button>
+                <button 
+                  onClick={() => router.push('/add-data')}
+                  className="font-silkscreen text-xs font-bold text-white uppercase bg-green-600 border-2 border-green-800 shadow-[2px_2px_0_#14532d] px-4 py-2 hover:bg-green-500 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#14532d] transition-all flex items-center gap-2 flex-1"
+                >
+                  <Plus className="h-3 w-3" />
+                  ADD DATA
+                </button>
+                <button className="font-silkscreen text-xs font-bold text-gray-800 uppercase bg-gray-100 border-2 border-gray-600 shadow-[2px_2px_0_#374151] px-4 py-2 hover:bg-gray-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151] transition-all flex items-center gap-2 flex-1">
+                  <Search className="h-3 w-3" />
+                  DISCOVER
+                </button>
               </div>
               
               <div className="flex items-center space-x-3 mb-4">
                 <button
                   onClick={toggleSelectAll}
-                  className="flex items-center space-x-2 text-gray-700 hover:text-gray-900"
+                  className="flex items-center space-x-2 font-silkscreen text-xs text-gray-800 hover:text-gray-900 uppercase"
                 >
                   <div className={cn(
-                    "w-5 h-5 border border-gray-400 rounded flex items-center justify-center",
-                    selectedKnowledgeIds.size === petKnowledge.length ? "bg-blue-600 border-blue-600" : ""
+                    "w-4 h-4 border-2 border-gray-600 flex items-center justify-center",
+                    selectedKnowledgeIds.size === petKnowledge.length ? "bg-blue-600 border-blue-600" : "bg-white"
                   )}>
                     {selectedKnowledgeIds.size === petKnowledge.length && (
-                      <Check className="h-3 w-3 text-white" />
+                      <Check className="h-2 w-2 text-white" />
                     )}
                   </div>
-                  <span className="text-sm">Select all sources</span>
+                  <span>SELECT ALL ({petKnowledge.length})</span>
                 </button>
               </div>
             </div>
 
-            <ScrollArea className="flex-1 px-6">
-              <div className="space-y-3 py-4">
-                {petKnowledge.map((knowledge) => (
-                  <div key={knowledge.id} className="flex items-center space-x-3 group">
-                    <button
-                      onClick={() => toggleKnowledgeSelection(knowledge.id)}
-                      className="flex-shrink-0"
-                    >
-                      <div className={cn(
-                        "w-5 h-5 border border-gray-400 rounded flex items-center justify-center",
-                        selectedKnowledgeIds.has(knowledge.id) ? "bg-blue-600 border-blue-600" : ""
-                      )}>
-                        {selectedKnowledgeIds.has(knowledge.id) && (
-                          <Check className="h-3 w-3 text-white" />
-                        )}
-                      </div>
-                    </button>
-                    
-                    <div className="flex items-center space-x-3 flex-1 min-w-0">
-                      <div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center flex-shrink-0">
-                        <FileText className="h-4 w-4 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm text-gray-900 truncate">
-                          {knowledge.url || knowledge.title || `Text content ${knowledge.id.slice(0, 8)}`}
+            <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] flex-1 overflow-hidden">
+              <div className="p-4 border-b-2 border-gray-600 bg-gray-100">
+                <div className="font-silkscreen text-sm font-bold text-gray-800 uppercase">
+                  KNOWLEDGE ITEMS ({petKnowledge.length})
+                </div>
+              </div>
+              <div className="h-full overflow-y-auto p-4">
+                <div className="space-y-3">
+                  {petKnowledge.map((knowledge) => (
+                    <div key={knowledge.id} className="bg-gray-50 border-2 border-gray-600 shadow-[2px_2px_0_#374151] p-3 flex items-center space-x-3 group hover:bg-gray-100 transition-colors">
+                      <button
+                        onClick={() => toggleKnowledgeSelection(knowledge.id)}
+                        className="flex-shrink-0"
+                      >
+                        <div className={cn(
+                          "w-4 h-4 border-2 border-gray-600 flex items-center justify-center",
+                          selectedKnowledgeIds.has(knowledge.id) ? "bg-blue-600 border-blue-600" : "bg-white"
+                        )}>
+                          {selectedKnowledgeIds.has(knowledge.id) && (
+                            <Check className="h-2 w-2 text-white" />
+                          )}
+                        </div>
+                      </button>
+                      
+                      <div className="flex items-center space-x-3 flex-1 min-w-0">
+                        <div className="w-8 h-8 bg-red-600 border-2 border-red-800 shadow-[2px_2px_0_#7f1d1d] flex items-center justify-center flex-shrink-0">
+                          <FileText className="h-4 w-4 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-silkscreen text-xs font-bold text-gray-800 uppercase truncate">
+                            {knowledge.url || knowledge.title || `TEXT CONTENT ${knowledge.id.slice(0, 8)}`}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </ScrollArea>
+            </div>
           </div>
         )}
 
         {activePanel === 'chat' && (
-          <div className="h-full flex flex-col relative">
+          <div className="h-full flex flex-col px-6 py-6">
             {/* Knowledge Header - Only show when no user messages */}
             {chatMessages.filter(m => m.role === 'user').length === 0 && (
-              <div className="p-6 border-b border-gray-200 bg-white flex-shrink-0">
+              <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-6 mb-6">
                 <div className="flex items-start space-x-4">
-                  <div className="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div className="w-12 h-12 bg-blue-100 border-2 border-blue-600 shadow-[2px_2px_0_#1e40af] flex items-center justify-center flex-shrink-0">
                     {isLoadingSummary ? (
-                      <Loader2 className="h-6 w-6 animate-spin text-gray-600" />
+                      <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
                     ) : (
                       <div className="text-2xl">{knowledgeSummary?.icon || '📚'}</div>
                     )}
                   </div>
                   <div className="flex-1">
                     {isLoadingSummary ? (
-                      <div className="space-y-2">
-                        <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
-                        <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
-                        <div className="space-y-1">
-                          <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                          <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                      <div className="space-y-3">
+                        <div className="h-6 bg-gray-200 border-2 border-gray-400 animate-pulse"></div>
+                        <div className="h-4 bg-gray-200 border-2 border-gray-400 w-32 animate-pulse"></div>
+                        <div className="space-y-2">
+                          <div className="h-4 bg-gray-200 border-2 border-gray-400 animate-pulse"></div>
+                          <div className="h-4 bg-gray-200 border-2 border-gray-400 w-3/4 animate-pulse"></div>
                         </div>
                       </div>
                     ) : knowledgeSummary ? (
                       <>
-                        <h1 className="text-xl font-semibold text-gray-900 mb-2">
+                        <h1 className="font-silkscreen text-lg font-bold text-gray-800 uppercase mb-2">
                           {knowledgeSummary.title}
                         </h1>
-                        <p className="text-sm text-gray-700 leading-relaxed mb-4">
+                        <p className="font-silkscreen text-xs text-gray-600 leading-relaxed mb-4 uppercase">
                           {knowledgeSummary.summary}
                         </p>
                         <div className="flex items-center space-x-3">
-                          <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
-                            <Copy className="h-4 w-4" />
-                          </Button>
+                          <button className="font-silkscreen text-xs font-bold text-gray-800 uppercase bg-gray-100 border-2 border-gray-600 shadow-[2px_2px_0_#374151] px-3 py-1 hover:bg-gray-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151] transition-all">
+                            <Copy className="h-3 w-3" />
+                          </button>
                         </div>
                       </>
                     ) : (
                       <>
-                        <h1 className="text-xl font-semibold text-gray-900 mb-2">
-                          No Knowledge Sources
+                        <h1 className="font-silkscreen text-lg font-bold text-gray-800 uppercase mb-2">
+                          NO KNOWLEDGE SOURCES
                         </h1>
-                        <p className="text-sm text-gray-600 mb-4">0 sources</p>
-                        <p className="text-sm text-gray-700 leading-relaxed">
-                          Add some knowledge sources to start exploring and chatting with your data.
+                        <p className="font-silkscreen text-xs text-gray-600 mb-4 uppercase">0 SOURCES</p>
+                        <p className="font-silkscreen text-xs text-gray-600 leading-relaxed uppercase">
+                          ADD SOME KNOWLEDGE SOURCES TO START EXPLORING YOUR DATA.
                         </p>
                       </>
                     )}
@@ -800,91 +839,85 @@ export default function DataInsightsPage() {
               </div>
             )}
 
-            {/* Chat Messages - Takes remaining space with bottom padding for fixed input */}
-            <div className="flex-1 overflow-hidden">
-              <div 
-                ref={chatMessagesRef}
-                className="h-full overflow-y-auto scroll-smooth pb-44"
-              >
-                <div className="px-6 py-4">
-                  <div className="space-y-6 max-w-4xl">
-                    {chatMessages.filter(m => m.id !== 'welcome').map((message) => (
-                      <div key={message.id} className="space-y-3">
-                        {message.role === 'user' ? (
-                          <div className="flex justify-end">
-                            <div className="bg-blue-600 text-white rounded-lg px-4 py-3 max-w-[80%]">
-                              <p className="text-sm">{message.content}</p>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex justify-start">
-                            <div className="bg-gray-100 text-gray-900 rounded-lg px-4 py-3 max-w-[80%]">
-                              <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                    
-                    {isGenerating && (
-                      <div className="flex justify-start">
-                        <div className="bg-gray-100 rounded-lg px-4 py-3">
-                          <div className="flex items-center space-x-2">
-                            <Loader2 className="h-4 w-4 animate-spin text-gray-600" />
-                            <span className="text-sm text-gray-600">Thinking...</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+            {/* Chat Messages */}
+            <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] flex-1 flex flex-col overflow-hidden">
+              <div className="p-4 border-b-2 border-gray-600 bg-gray-100">
+                <div className="font-silkscreen text-sm font-bold text-gray-800 uppercase">
+                  CHAT WITH YOUR DATA
                 </div>
               </div>
-            </div>
-
-            {/* Fixed Chat Input Area at Bottom */}
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
-
-              {/* Chat Input */}
-              <div className="p-6">
-                <div className="relative">
-                  <Input
-                    placeholder="Start typing..."
-                    value={currentMessage}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentMessage(e.target.value)}
-                    onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
-                    className="bg-white border-gray-300 text-gray-900 placeholder-gray-500 pr-16"
-                    disabled={isGenerating}
-                  />
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
-                    <div className="flex items-center justify-center w-6 h-6 bg-gray-200 rounded text-xs text-gray-600">
-                      ({petKnowledge.length})
+              
+              <div className="flex-1 overflow-y-auto p-4 pb-32">
+                <div className="space-y-4">
+                  {chatMessages.filter(m => m.id !== 'welcome').map((message) => (
+                    <div key={message.id} className="space-y-3">
+                      {message.role === 'user' ? (
+                        <div className="flex justify-end">
+                          <div className="bg-blue-600 border-2 border-blue-800 shadow-[2px_2px_0_#1e40af] text-white p-3 max-w-[80%]">
+                            <p className="font-silkscreen text-xs uppercase">{message.content}</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex justify-start">
+                          <div className="bg-gray-100 border-2 border-gray-600 shadow-[2px_2px_0_#374151] text-gray-800 p-3 max-w-[80%]">
+                            <p className="font-silkscreen text-xs uppercase whitespace-pre-wrap">{message.content}</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <Button 
+                  ))}
+                  
+                  {isGenerating && (
+                    <div className="flex justify-start">
+                      <div className="bg-gray-100 border-2 border-gray-600 shadow-[2px_2px_0_#374151] p-3">
+                        <div className="flex items-center space-x-2">
+                          <Loader2 className="h-4 w-4 animate-spin text-gray-600" />
+                          <span className="font-silkscreen text-xs text-gray-600 uppercase">THINKING...</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Fixed Chat Input Area at Bottom */}
+              <div className="border-t-2 border-gray-600 bg-gray-50 p-4">
+                <div className="space-y-3">
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      placeholder="TYPE YOUR MESSAGE..."
+                      value={currentMessage}
+                      onChange={(e) => setCurrentMessage(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                      className="font-silkscreen text-xs uppercase bg-white border-2 border-gray-600 shadow-[2px_2px_0_#374151] px-3 py-2 flex-1 placeholder-gray-500 focus:outline-none focus:border-blue-600"
+                      disabled={isGenerating}
+                    />
+                    <button 
                       onClick={handleSendMessage}
                       disabled={isGenerating || !currentMessage.trim()}
-                      size="sm"
-                      className="bg-blue-600 hover:bg-blue-700 w-8 h-8 p-0"
+                      className="font-silkscreen text-xs font-bold text-white uppercase bg-blue-600 border-2 border-blue-800 shadow-[2px_2px_0_#1e40af] px-4 py-2 hover:bg-blue-500 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#1e40af] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Send className="h-4 w-4" />
-                    </Button>
+                      <Send className="h-3 w-3" />
+                    </button>
                   </div>
-                </div>
-                
-                {/* Compact Suggested Questions - Single Row */}
-                <div className="mt-3">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <span className="text-xs text-gray-500">Suggestions:</span>
-                  </div>
-                  <div className="flex space-x-2 overflow-x-auto scrollbar-hide">
-                    {suggestedQuestions.slice(0, 3).map((question, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setCurrentMessage(question)}
-                        className="flex-shrink-0 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 rounded-full text-xs text-gray-700 hover:text-gray-900 transition-colors border border-gray-200"
-                      >
-                        {question.length > 50 ? question.substring(0, 50) + '...' : question}
-                      </button>
-                    ))}
+                  
+                  {/* Suggested Questions */}
+                  <div>
+                    <div className="font-silkscreen text-xs text-gray-600 uppercase mb-2">
+                      QUICK PROMPTS:
+                    </div>
+                    <div className="flex space-x-2 overflow-x-auto">
+                      {suggestedQuestions.slice(0, 3).map((question, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setCurrentMessage(question)}
+                          className="font-silkscreen text-xs text-gray-800 uppercase bg-white border-2 border-gray-600 shadow-[2px_2px_0_#374151] px-3 py-1 hover:bg-gray-100 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151] transition-all whitespace-nowrap"
+                        >
+                          {question.length > 30 ? question.substring(0, 30) + '...' : question}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -893,107 +926,96 @@ export default function DataInsightsPage() {
         )}
 
         {activePanel === 'studio' && (
-          <div className="h-full overflow-auto bg-white">
-            <div className="p-6 space-y-4">
-              {/* Header */}
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">Actions</h2>
-                <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
+          <div className="h-full overflow-auto px-6 py-6">
+            <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-6">
+              <div className="mb-6">
+                <div className="font-silkscreen text-xl font-bold text-gray-800 uppercase mb-2 flex items-center gap-3">
+                  <Sparkles className="h-6 w-6" />
+                  CONTENT STUDIO
+                </div>
+                <div className="font-silkscreen text-xs text-gray-600 uppercase">
+                  GENERATE AI-POWERED CONTENT
+                </div>
               </div>
+              
               {/* Content Generation Grid */}
-              <div className="grid grid-cols-2 gap-3">
-                <Button 
-                  variant="outline" 
-                  className="border-gray-300 rounded-full text-gray-700 hover:bg-gray-50 h-8 text-sm flex flex-row items-center justify-center"
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <button 
                   onClick={() => generateContent('study_guide')}
                   disabled={isGeneratingContent || petKnowledge.length === 0}
+                  className="font-silkscreen text-xs font-bold text-gray-800 uppercase bg-blue-100 border-2 border-blue-600 shadow-[2px_2px_0_#1e40af] p-4 hover:bg-blue-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#1e40af] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center gap-2"
                 >
-                  {isGeneratingContent && generatedContent?.type !== 'study_guide' ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                  {isGeneratingContent && generatedContent?.type === 'study_guide' ? (
+                    <Loader2 className="h-6 w-6 animate-spin" />
                   ) : (
-                    <>
-                      <BookOpen className="h-5 w-5 mb-1" />
-                      <span className="text-xs font-bold">Study guide</span>
-                    </>
+                    <BookOpen className="h-6 w-6" />
                   )}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="border-gray-300 rounded-full text-gray-700 hover:bg-gray-50 h-8 text-sm flex flex-row items-center justify-center"
+                  <span>STUDY GUIDE</span>
+                </button>
+                
+                <button 
                   onClick={() => generateContent('briefing')}
                   disabled={isGeneratingContent || petKnowledge.length === 0}
+                  className="font-silkscreen text-xs font-bold text-gray-800 uppercase bg-green-100 border-2 border-green-600 shadow-[2px_2px_0_#14532d] p-4 hover:bg-green-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#14532d] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center gap-2"
                 >
-                  {isGeneratingContent && generatedContent?.type !== 'briefing' ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                  {isGeneratingContent && generatedContent?.type === 'briefing' ? (
+                    <Loader2 className="h-6 w-6 animate-spin" />
                   ) : (
-                    <>
-                      <FileText className="h-5 w-5 mb-1" />
-                      <span className="text-xs font-bold">Briefing doc</span>
-                    </>
+                    <FileText className="h-6 w-6" />
                   )}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="border-gray-300 rounded-full text-gray-700 hover:bg-gray-50 h-8 text-sm flex flex-row items-center justify-center"
+                  <span>BRIEFING DOC</span>
+                </button>
+                
+                <button 
                   onClick={() => generateContent('faq')}
                   disabled={isGeneratingContent || petKnowledge.length === 0}
+                  className="font-silkscreen text-xs font-bold text-gray-800 uppercase bg-purple-100 border-2 border-purple-600 shadow-[2px_2px_0_#581c87] p-4 hover:bg-purple-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#581c87] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center gap-2"
                 >
-                  {isGeneratingContent && generatedContent?.type !== 'faq' ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                  {isGeneratingContent && generatedContent?.type === 'faq' ? (
+                    <Loader2 className="h-6 w-6 animate-spin" />
                   ) : (
-                    <>
-                      <MessageCircle className="h-5 w-5 mb-1" />
-                      <span className="text-xs font-bold">FAQ</span>
-                    </>
+                    <MessageCircle className="h-6 w-6" />
                   )}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="border-gray-300 rounded-full text-gray-700 hover:bg-gray-50 h-8 text-sm flex flex-row items-center justify-center"
+                  <span>FAQ</span>
+                </button>
+                
+                <button 
                   onClick={() => generateContent('timeline')}
                   disabled={isGeneratingContent || petKnowledge.length === 0}
+                  className="font-silkscreen text-xs font-bold text-gray-800 uppercase bg-orange-100 border-2 border-orange-600 shadow-[2px_2px_0_#c2410c] p-4 hover:bg-orange-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#c2410c] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center gap-2"
                 >
-                  {isGeneratingContent && generatedContent?.type !== 'timeline' ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                  {isGeneratingContent && generatedContent?.type === 'timeline' ? (
+                    <Loader2 className="h-6 w-6 animate-spin" />
                   ) : (
-                    <>
-                      <Target className="h-5 w-5 mb-1" />
-                      <span className="text-xs font-bold">Timeline</span>
-                    </>
+                    <Target className="h-6 w-6" />
                   )}
-                </Button>
+                  <span>TIMELINE</span>
+                </button>
               </div>
 
               {/* Knowledge Summary */}
               {knowledgeSummary && petKnowledge.length > 0 && (
-             
-                  <div className="flex items-start justify-baseline space-x-3">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-xs font-medium text-gray-900 truncate mb-1">
-                        {knowledgeSummary.title.length > 60 
-                          ? knowledgeSummary.title.substring(0, 60) + '...' 
-                          : knowledgeSummary.title}
-                      </h3>
-                      <p className="text-xs text-gray-600 leading-relaxed">
-                        {knowledgeSummary.summary.length > 120 
-                          ? knowledgeSummary.summary.substring(0, 120) + '...' 
-                          : knowledgeSummary.summary}
-                      </p>
-                    </div>
+                <div className="bg-gray-50 border-2 border-gray-600 shadow-[2px_2px_0_#374151] p-4 mb-6">
+                  <div className="font-silkscreen text-sm font-bold text-gray-800 uppercase mb-2">
+                    KNOWLEDGE OVERVIEW
                   </div>
+                  <div className="font-silkscreen text-xs text-gray-600 uppercase leading-relaxed">
+                    {knowledgeSummary.summary.length > 200 
+                      ? knowledgeSummary.summary.substring(0, 200) + '...' 
+                      : knowledgeSummary.summary}
+                  </div>
+                </div>
               )}
 
               {/* No Knowledge Sources Warning */}
               {petKnowledge.length === 0 && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="bg-yellow-100 border-2 border-yellow-600 shadow-[2px_2px_0_#92400e] p-4">
                   <div className="flex items-start space-x-3">
-                    <Info className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                    <Info className="h-5 w-5 text-yellow-800 flex-shrink-0 mt-0.5" />
                     <div>
-                      <h3 className="text-sm font-medium text-yellow-800">No Knowledge Sources</h3>
-                      <p className="text-sm text-yellow-700 mt-1">
-                        Add some knowledge sources to start generating AI-powered content.
+                      <h3 className="font-silkscreen text-sm font-bold text-yellow-800 uppercase">NO KNOWLEDGE SOURCES</h3>
+                      <p className="font-silkscreen text-xs text-yellow-700 mt-1 uppercase">
+                        ADD KNOWLEDGE SOURCES TO START GENERATING CONTENT.
                       </p>
                     </div>
                   </div>
@@ -1004,65 +1026,57 @@ export default function DataInsightsPage() {
               {generatedContent && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-gray-900 capitalize">
+                    <h2 className="font-silkscreen text-lg font-bold text-gray-800 uppercase">
                       {generatedContent.type.replace('_', ' ')}
                     </h2>
                     <div className="flex items-center space-x-2">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-gray-600 hover:text-gray-900"
+                      <button 
                         onClick={() => copyMessage(generatedContent.content)}
+                        className="font-silkscreen text-xs font-bold text-gray-800 uppercase bg-gray-100 border-2 border-gray-600 shadow-[2px_2px_0_#374151] px-3 py-1 hover:bg-gray-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151] transition-all"
                       >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-gray-600 hover:text-gray-900"
+                        <Copy className="h-3 w-3" />
+                      </button>
+                      <button 
                         onClick={() => setGeneratedContent(null)}
+                        className="font-silkscreen text-xs font-bold text-red-800 uppercase bg-red-100 border-2 border-red-600 shadow-[2px_2px_0_#7f1d1d] px-3 py-1 hover:bg-red-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#7f1d1d] transition-all"
                       >
-                        <X className="h-4 w-4" />
-                      </Button>
+                        <X className="h-3 w-3" />
+                      </button>
                     </div>
                   </div>
                   
-                  <Card className="border border-gray-200">
-                    <CardContent className="p-6">
-                      <div className="prose prose-sm max-w-none">
-                        <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
-                          {generatedContent.content}
-                        </div>
+                  <div className="bg-white border-2 border-gray-600 shadow-[2px_2px_0_#374151]">
+                    <div className="p-6">
+                      <div className="font-silkscreen text-xs text-gray-800 leading-relaxed whitespace-pre-wrap">
+                        {generatedContent.content}
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                   
                   <div className="flex items-center space-x-3">
-                    <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50">
-                      <FileText className="h-4 w-4 mr-2" />
-                      Save to note
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                    <button className="font-silkscreen text-xs font-bold text-gray-800 uppercase bg-gray-100 border-2 border-gray-600 shadow-[2px_2px_0_#374151] px-4 py-2 hover:bg-gray-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151] transition-all flex items-center gap-2">
+                      <FileText className="h-3 w-3" />
+                      SAVE TO NOTE
+                    </button>
+                    <button 
                       onClick={() => copyMessage(generatedContent.content)}
+                      className="font-silkscreen text-xs font-bold text-blue-800 uppercase bg-blue-100 border-2 border-blue-600 shadow-[2px_2px_0_#1e40af] px-4 py-2 hover:bg-blue-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#1e40af] transition-all flex items-center gap-2"
                     >
-                      <Copy className="h-4 w-4 mr-2" />
-                      Copy
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                      <Copy className="h-3 w-3" />
+                      COPY
+                    </button>
+                    <button 
                       onClick={() => generateContent(generatedContent.type)}
                       disabled={isGeneratingContent}
+                      className="font-silkscreen text-xs font-bold text-green-800 uppercase bg-green-100 border-2 border-green-600 shadow-[2px_2px_0_#14532d] px-4 py-2 hover:bg-green-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#14532d] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                       {isGeneratingContent ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        <Loader2 className="h-3 w-3 animate-spin" />
                       ) : (
-                        <Sparkles className="h-4 w-4 mr-2" />
+                        <Sparkles className="h-3 w-3" />
                       )}
-                      Regenerate
-                    </Button>
+                      REGENERATE
+                    </button>
                   </div>
                 </div>
               )}
@@ -1072,7 +1086,7 @@ export default function DataInsightsPage() {
       </div>
       
       <Toaster />
-    </div>
+    </main>
   );
 }
 

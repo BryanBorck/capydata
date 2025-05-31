@@ -54,8 +54,8 @@ export default function PlayGamePage() {
           
           <div className="font-silkscreen text-sm font-bold text-white uppercase tracking-wider drop-shadow-lg">
             {APP_NAME} - GAMES
-          </div>
-          
+              </div>
+              
           <div className="w-16"></div> {/* Spacer for balance */}
           </div>
         </header>
