@@ -40,7 +40,7 @@ export default function StudioPanel({
                 LOADING...
               </div>
               <div className="font-silkscreen text-xs text-gray-600 uppercase text-center">
-                IT'S FINE, ALWAYS TAKE SOME TIME
+                IT&apos;S FINE, ALWAYS TAKE SOME TIME
               </div>
             </div>
           </div>
