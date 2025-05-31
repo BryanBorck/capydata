@@ -284,7 +284,7 @@ export default function AddFilePage() {
                 Upload Documents 📁
               </h1>
               <p className="text-sm sm:text-base text-gray-600">
-                Share files, documents, or any digital content to expand {activePet.name}'s knowledge base.
+                Share files, documents, or any digital content to expand {activePet.name}&apos;s knowledge base.
               </p>
             </div>
 

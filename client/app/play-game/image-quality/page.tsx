@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Trophy, Check, HelpCircle, X, Home, RotateCcw } from "lucide-react";
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 import { useUser } from "@/providers/user-provider";
-import { APP_NAME } from "@/lib/constants";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { getGameConfig } from "../game-config";
@@ -33,19 +32,15 @@ export default function ImageQualityGamePage() {
   // Get game configuration
   const gameConfig = getGameConfig('image-quality');
   
-  if (!gameConfig) {
-    return <div>Game configuration not found</div>;
-  }
-
-  const totalRounds = gameConfig.stats.rounds || 3;
+  const totalRounds = gameConfig?.stats.rounds || 3;
 
   // Use game rewards hook
   const { rewardsAwarded, awardRewards, resetRewards } = useGameRewards(
-    gameConfig.id,
+    gameConfig?.id || 'image-quality',
     {
-      points: gameConfig.rewards.points,
-      skill: gameConfig.rewards.skill,
-      skillValue: gameConfig.rewards.skillValue
+      points: gameConfig?.rewards.points || 50,
+      skill: gameConfig?.rewards.skill || 'science',
+      skillValue: gameConfig?.rewards.skillValue || 5
     }
   );
 
@@ -92,6 +87,10 @@ export default function ImageQualityGamePage() {
     setShowFeedback(false);
     resetRewards();
   };
+
+  if (!gameConfig) {
+    return <div>Game configuration not found</div>;
+  }
 
   if (!isAuthenticated) {
     return null; // Will redirect in useEffect

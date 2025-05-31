@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Trophy, BookOpen, Star, HelpCircle, X, Home, RotateCcw } from "lucide-react";
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 import { useUser } from "@/providers/user-provider";
-import { APP_NAME } from "@/lib/constants";
 import { Toaster } from "@/components/ui/sonner";
-import { toast } from "sonner";
 import { getGameConfig } from "../game-config";
 import { useGameRewards } from "@/lib/hooks/use-game-rewards";
 
@@ -78,20 +76,16 @@ export default function KnowledgeTriviaGamePage() {
   // Get game configuration
   const gameConfig = getGameConfig('knowledge-trivia');
   
-  if (!gameConfig) {
-    return <div>Game configuration not found</div>;
-  }
-
-  const totalQuestions = gameConfig.stats.questions || 6;
+  const totalQuestions = gameConfig?.stats.questions || 6;
   const question = TRIVIA_QUESTIONS[currentQuestion];
 
   // Use game rewards hook
   const { rewardsAwarded, awardRewards, resetRewards } = useGameRewards(
-    gameConfig.id,
+    gameConfig?.id || 'knowledge-trivia',
     {
-      points: gameConfig.rewards.points,
-      skill: gameConfig.rewards.skill,
-      skillValue: gameConfig.rewards.skillValue
+      points: gameConfig?.rewards.points || 50,
+      skill: gameConfig?.rewards.skill || 'trivia',
+      skillValue: gameConfig?.rewards.skillValue || 5
     }
   );
 
@@ -144,6 +138,11 @@ export default function KnowledgeTriviaGamePage() {
     setShowFact(false);
     resetRewards();
   };
+
+  // Early returns after all hooks
+  if (!gameConfig) {
+    return <div>Game configuration not found</div>;
+  }
 
   if (!isAuthenticated) {
     return null; // Will redirect in useEffect

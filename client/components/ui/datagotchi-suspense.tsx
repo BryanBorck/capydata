@@ -80,7 +80,7 @@ const DefaultNoData = () => (
       <div>
         <h3 className="text-lg font-semibold text-foreground">No data found</h3>
         <p className="text-sm text-muted-foreground mt-1">
-          It looks like there's nothing here yet.
+          It looks like there&apos;s nothing here yet.
         </p>
       </div>
     </div>

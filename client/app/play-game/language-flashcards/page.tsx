@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Globe, Trophy, X, Star, HelpCircle, Home, RotateCcw } from "lucide-react";
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 import { useUser } from "@/providers/user-provider";
-import { APP_NAME } from "@/lib/constants";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { getGameConfig } from "../game-config";
@@ -68,19 +67,15 @@ export default function LanguageFlashcardsGamePage() {
   // Get game configuration
   const gameConfig = getGameConfig('language-flashcards');
   
-  if (!gameConfig) {
-    return <div>Game configuration not found</div>;
-  }
+  const totalCards = gameConfig?.stats.cards || 5;
 
-  const totalCards = gameConfig.stats.cards || 5;
-
-  // Use game rewards hook
+  // Use game rewards hook - moved before early return
   const { rewardsAwarded, awardRewards, resetRewards } = useGameRewards(
-    gameConfig.id,
+    gameConfig?.id || 'language-flashcards',
     {
-      points: gameConfig.rewards.points,
-      skill: gameConfig.rewards.skill,
-      skillValue: gameConfig.rewards.skillValue
+      points: gameConfig?.rewards.points || 50,
+      skill: gameConfig?.rewards.skill || 'science',
+      skillValue: gameConfig?.rewards.skillValue || 5
     }
   );
 
@@ -89,19 +84,23 @@ export default function LanguageFlashcardsGamePage() {
     'Japanese', 'Korean', 'Mandarin', 'Arabic', 'Russian'
   ];
 
-  // Redirect if not authenticated
+  // Redirect if not authenticated - moved before early return
   useEffect(() => {
     if (!isAuthenticated) {
       router.push('/login');
     }
   }, [isAuthenticated, router]);
 
-  // Award rewards when game is completed
+  // Award rewards when game is completed - moved before early return
   useEffect(() => {
     if (isComplete && !rewardsAwarded) {
       awardRewards();
     }
   }, [isComplete, rewardsAwarded, awardRewards]);
+
+  if (!gameConfig) {
+    return <div>Game configuration not found</div>;
+  }
 
   const handleLanguageSelect = async (language: string) => {
     setSelectedLanguage(language);

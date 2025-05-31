@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Trophy, ThumbsUp, ThumbsDown, HelpCircle, X, Home, RotateCcw } from "lucide-react";
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 import { useUser } from "@/providers/user-provider";
-import { APP_NAME } from "@/lib/constants";
 import { Toaster } from "@/components/ui/sonner";
-import { toast } from "sonner";
 import { getGameConfig } from "../game-config";
 import { useGameRewards } from "@/lib/hooks/use-game-rewards";
 
@@ -34,19 +32,15 @@ export default function SentimentLabelingGamePage() {
   // Get game configuration
   const gameConfig = getGameConfig('sentiment-labeling');
   
-  if (!gameConfig) {
-    return <div>Game configuration not found</div>;
-  }
-
-  const totalTexts = gameConfig.stats.texts || 5;
+  const totalTexts = gameConfig?.stats.texts || 5;
 
   // Use game rewards hook
   const { rewardsAwarded, awardRewards, resetRewards } = useGameRewards(
-    gameConfig.id,
+    gameConfig?.id || 'sentiment-labeling',
     {
-      points: gameConfig.rewards.points,
-      skill: gameConfig.rewards.skill,
-      skillValue: gameConfig.rewards.skillValue
+      points: gameConfig?.rewards.points || 50,
+      skill: gameConfig?.rewards.skill || 'science',
+      skillValue: gameConfig?.rewards.skillValue || 5
     }
   );
 
@@ -90,6 +84,10 @@ export default function SentimentLabelingGamePage() {
     setSelectedSentiment('');
     resetRewards();
   };
+
+  if (!gameConfig) {
+    return <div>Game configuration not found</div>;
+  }
 
   if (!isAuthenticated) {
     return null; // Will redirect in useEffect
@@ -254,7 +252,7 @@ export default function SentimentLabelingGamePage() {
               {/* Instructions */}
               <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-4 text-center">
                 <div className="font-silkscreen text-sm font-bold text-gray-800 uppercase">
-                  WHAT'S THE SENTIMENT OF THIS TEXT?
+                  WHAT&apos;S THE SENTIMENT OF THIS TEXT?
                 </div>
               </div>
 
@@ -262,7 +260,7 @@ export default function SentimentLabelingGamePage() {
               <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-8">
                 <div className="bg-gray-100 border-4 border-gray-600 shadow-[4px_4px_0_#374151] p-6 text-center">
                   <div className="font-silkscreen text-lg text-gray-800 leading-relaxed">
-                    "{SAMPLE_TEXTS[currentText]}"
+                    &quot;{SAMPLE_TEXTS[currentText]}&quot;
                   </div>
                 </div>
               </div>

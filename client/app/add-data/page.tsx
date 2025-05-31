@@ -400,7 +400,7 @@ export default function AddDataPage() {
                     <div className="text-center py-8">
                       <Brain className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 mb-2">No Knowledge Sources Yet</h3>
-                      <p className="text-sm text-gray-600 mb-4">Start adding data to build your pet's intelligence!</p>
+                      <p className="text-sm text-gray-600 mb-4">Start adding data to build your pet&apos;s intelligence!</p>
                       <Button 
                         onClick={() => setShowDataTypeDialog(true)}
                         className="bg-blue-500 hover:bg-blue-600 text-white"
@@ -463,7 +463,7 @@ export default function AddDataPage() {
           <DrawerHeader>
             <DrawerTitle>Choose Data Type</DrawerTitle>
             <DrawerDescription>
-              Select the type of data you want to add to {activePet?.name}'s knowledge base.
+              Select the type of data you want to add to {activePet?.name}&apos;s knowledge base.
             </DrawerDescription>
           </DrawerHeader>
           

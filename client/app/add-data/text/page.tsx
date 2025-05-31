@@ -209,7 +209,7 @@ export default function AddTextPage() {
                 Share Your Knowledge 📝
               </h1>
               <p className="text-sm sm:text-base text-gray-600">
-                Add articles, notes, or any written content to boost {activePet.name}'s intelligence.
+                Add articles, notes, or any written content to boost {activePet.name}&apos;s intelligence.
               </p>
             </div>
 
