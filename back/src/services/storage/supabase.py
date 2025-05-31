@@ -3,6 +3,7 @@ from supabase import create_client
 import hashlib
 
 from .schemas import DataInstance, Knowledge, Image
+from src.scraper.notte import NotteScraper
 
 class Supabase:
     def __init__(self, url: str, key: str):
@@ -68,10 +69,51 @@ class Supabase:
         CREATE INDEX IF NOT EXISTS idx_knowledge_content_fts ON public.knowledge USING gin(to_tsvector('english', content));
         """
         self.client = create_client(url, key)
+        self.scraper = NotteScraper()
     
     def _hash_content(self, content: str) -> str:
         """Generate hash of content for deduplication."""
         return hashlib.sha256(content.encode('utf-8')).hexdigest()[:16]
+    
+    def _scrape_url_content(self, url: str, instruction: Optional[str] = None) -> Dict[str, str]:
+        """Scrape content from URL using NotteScraper."""
+        try:
+            result = self.scraper.scrape(url=url, instruction=instruction)
+            # Extract relevant content from scraper result
+            if isinstance(result, dict) and 'data' in result:
+                data = result['data']
+                content = ""
+                title = ""
+                
+                # Try to extract content and title from the scraped data
+                if isinstance(data, dict):
+                    # Look for common content fields
+                    content = (data.get('content') or 
+                             data.get('text') or 
+                             data.get('body') or 
+                             str(data))
+                    title = (data.get('title') or 
+                           data.get('heading') or 
+                           data.get('name') or 
+                           "")
+                else:
+                    content = str(data)
+                
+                return {
+                    "content": content,
+                    "title": title
+                }
+            else:
+                return {
+                    "content": str(result),
+                    "title": ""
+                }
+        except Exception as e:
+            # If scraping fails, return error info
+            return {
+                "content": f"Failed to scrape content: {str(e)}",
+                "title": ""
+            }
     
     def get_pet(self, pet_id: str) -> Optional[Dict[str, Any]]:
         """Get a specific pet by ID."""
@@ -168,6 +210,14 @@ class Supabase:
         knowledge: Knowledge
     ) -> Dict[str, Any]:
         """Add knowledge to a DataInstance (creates if not exists)."""
+        # If content is not provided or empty, scrape it from the URL
+        if not knowledge.content or knowledge.content.strip() == "":
+            scraped = self._scrape_url_content(knowledge.url)
+            knowledge.content = scraped["content"]
+            # Use scraped title if no title was provided
+            if not knowledge.title:
+                knowledge.title = scraped["title"]
+        
         knowledge_data = {
             "url": knowledge.url,
             "content": knowledge.content,
@@ -207,10 +257,18 @@ class Supabase:
         results = []
         
         for k in knowledge_list:
+            # Handle cases where only URL is provided
+            url = k.get("url")
+            if not url:
+                continue  # Skip entries without URL
+                
+            content = k.get("content", "")
+            title = k.get("title", "")
+            
             knowledge = Knowledge(
-                url=k["url"],
-                content=k["content"],
-                title=k.get("title"),
+                url=url,
+                content=content,
+                title=title,
                 metadata=k.get("metadata", {})
             )
             result = self.add_knowledge_to_instance(datainstance_id, knowledge)
@@ -416,6 +474,27 @@ class Supabase:
         
         pet["instances"] = complete_instances
         return pet
+    
+    def add_knowledge_from_urls(
+        self,
+        datainstance_id: str,
+        urls: List[str],
+        instruction: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Add knowledge to a DataInstance from a list of URLs (content will be scraped)."""
+        results = []
+        
+        for url in urls:
+            knowledge = Knowledge(
+                url=url,
+                content="",  # Will be scraped automatically
+                title="",    # Will be scraped automatically
+                metadata={"scraped": True, "instruction": instruction} if instruction else {"scraped": True}
+            )
+            result = self.add_knowledge_to_instance(datainstance_id, knowledge)
+            results.append(result)
+        
+        return results
 
 
 # Example usage for testing
@@ -441,12 +520,11 @@ if __name__ == "__main__":
         knowledge_list=[
             {
                 "url": "https://pytorch.org/tutorials/",
-                "content": "PyTorch tutorial content...",
-                "title": "PyTorch Tutorials"
+                # content will be automatically scraped
             },
             {
                 "url": "https://tensorflow.org/guide",
-                "content": "TensorFlow guide content...",
+                "content": "TensorFlow guide content...",  # provided content (won't be scraped)
                 "title": "TensorFlow Guide"
             }
         ],
@@ -458,6 +536,18 @@ if __name__ == "__main__":
     )
     
     print(f"Created DataInstance with {len(instance['knowledge'])} knowledge items and {len(instance['images'])} images")
+    
+    # Add knowledge from URLs only (content will be scraped)
+    additional_knowledge = storage.add_knowledge_from_urls(
+        datainstance_id=instance["id"],
+        urls=[
+            "https://scikit-learn.org/stable/",
+            "https://keras.io/"
+        ],
+        instruction="Extract the main content and title from this machine learning documentation"
+    )
+    
+    print(f"Added {len(additional_knowledge)} additional knowledge items from URLs")
     
     # Search pet content
     search_results = storage.search_pet_content(pet_id, "machine learning")

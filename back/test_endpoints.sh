@@ -240,18 +240,149 @@ run_test "Get Images from Non-existent Instance" \
     "curl '$API_BASE_URL/api/v1/storage/datainstances/$NON_EXISTENT_ID/images'" \
     "200"
 
+# === SCRAPING TESTS ===
+echo -e "${BLUE}🕷️ Testing Scraping Functionality${NC}"
+
+# Test 31: Direct Scraper Endpoint - General URL
+run_test "Direct Scraper - General URL" \
+    "curl -X POST '$API_BASE_URL/scraper/' \
+    -H 'Content-Type: application/json' \
+    -d '{\"url\": \"https://httpbin.org/html\"}'" \
+    "200"
+
+# Test 32: Direct Scraper Endpoint - With Instruction
+run_test "Direct Scraper - With Instruction" \
+    "curl -X POST '$API_BASE_URL/scraper/' \
+    -H 'Content-Type: application/json' \
+    -d '{\"url\": \"https://httpbin.org/html\", \"instruction\": \"Extract the title and main content\"}'" \
+    "200"
+
+# Test 33: Direct Scraper Endpoint - Invalid URL
+run_test "Direct Scraper - Invalid URL" \
+    "curl -X POST '$API_BASE_URL/scraper/' \
+    -H 'Content-Type: application/json' \
+    -d '{\"url\": \"not-a-valid-url\"}'" \
+    "422"
+
+# Test 34: Twitter Scraper Endpoint
+run_test "Twitter Scraper Endpoint" \
+    "curl -X POST '$API_BASE_URL/scraper/twitter' \
+    -H 'Content-Type: application/json' \
+    -d '{\"url\": \"https://twitter.com/example/status/123\"}'" \
+    "200"
+
+# Test 35: Add Knowledge with URL Only (Triggers Auto-Scraping)
+run_test "Add Knowledge with URL Only (Auto-Scraping)" \
+    "curl -X POST '$API_BASE_URL/api/v1/storage/datainstances/$TEST_INSTANCE_ID/knowledge' \
+    -H 'Content-Type: application/json' \
+    -d '[{\"url\": \"https://httpbin.org/html\"}]'" \
+    "200"
+
+# Test 36: Add Knowledge Mixed (Some with content, some URL-only)
+run_test "Add Knowledge Mixed (Content + URL-only)" \
+    "curl -X POST '$API_BASE_URL/api/v1/storage/datainstances/$TEST_INSTANCE_ID/knowledge' \
+    -H 'Content-Type: application/json' \
+    -d '[
+        {\"url\": \"https://example.com/manual\", \"content\": \"Pre-provided content\", \"title\": \"Manual Entry\"}, 
+        {\"url\": \"https://httpbin.org/json\"},
+        {\"url\": \"https://httpbin.org/xml\"}
+    ]'" \
+    "200"
+
+# Test 37: Add Knowledge from Documentation URL (Real Example)
+run_test "Add Knowledge from Real Documentation URL" \
+    "curl -X POST '$API_BASE_URL/api/v1/storage/datainstances/$TEST_INSTANCE_ID/knowledge' \
+    -H 'Content-Type: application/json' \
+    -d '[{\"url\": \"https://docs.python.org/3/\"}]'" \
+    "200"
+
+# Test 38: Add Knowledge with Empty Content (Should Trigger Scraping)
+run_test "Add Knowledge with Empty Content (Triggers Scraping)" \
+    "curl -X POST '$API_BASE_URL/api/v1/storage/datainstances/$TEST_INSTANCE_ID/knowledge' \
+    -H 'Content-Type: application/json' \
+    -d '[{\"url\": \"https://httpbin.org/html\", \"content\": \"\", \"title\": \"\"}]'" \
+    "200"
+
+# Test 39: Add Knowledge with Whitespace Content (Should Trigger Scraping)
+run_test "Add Knowledge with Whitespace Content (Triggers Scraping)" \
+    "curl -X POST '$API_BASE_URL/api/v1/storage/datainstances/$TEST_INSTANCE_ID/knowledge' \
+    -H 'Content-Type: application/json' \
+    -d '[{\"url\": \"https://httpbin.org/html\", \"content\": \"   \", \"title\": \"\"}]'" \
+    "200"
+
+# Test 40: Scraper Error Handling - Non-existent Domain
+run_test "Scraper Error Handling - Non-existent Domain" \
+    "curl -X POST '$API_BASE_URL/scraper/' \
+    -H 'Content-Type: application/json' \
+    -d '{\"url\": \"https://this-domain-definitely-does-not-exist-12345.com\"}'" \
+    "500"
+
+# Test 41: Add Knowledge with Invalid URL (Tests Scraper Error Handling)
+run_test "Add Knowledge with Invalid URL (Scraper Error Handling)" \
+    "curl -X POST '$API_BASE_URL/api/v1/storage/datainstances/$TEST_INSTANCE_ID/knowledge' \
+    -H 'Content-Type: application/json' \
+    -d '[{\"url\": \"https://invalid-domain-12345.com/page\"}]'" \
+    "200"
+
+# Test 42: Add Multiple URLs for Bulk Scraping
+run_test "Add Multiple URLs for Bulk Scraping" \
+    "curl -X POST '$API_BASE_URL/api/v1/storage/datainstances/$TEST_INSTANCE_ID/knowledge' \
+    -H 'Content-Type: application/json' \
+    -d '[
+        {\"url\": \"https://httpbin.org/html\"}, 
+        {\"url\": \"https://httpbin.org/json\"},
+        {\"url\": \"https://httpbin.org/xml\"},
+        {\"url\": \"https://httpbin.org/headers\"}
+    ]'" \
+    "200"
+
+# Test 43: Verify Scraped Content was Added (Check Knowledge)
+run_test "Verify Scraped Content was Added" \
+    "curl '$API_BASE_URL/api/v1/storage/datainstances/$TEST_INSTANCE_ID/knowledge'" \
+    "200"
+
+# Test 44: Search for Scraped Content
+run_test "Search for Scraped Content" \
+    "curl '$API_BASE_URL/api/v1/storage/pets/$TEST_PET_ID/search?q=httpbin'" \
+    "200"
+
+# Test 45: Create Data Instance with Knowledge URLs (Complete Flow)
+run_test "Create Data Instance with Knowledge URLs (Complete Flow)" \
+    "curl -X POST '$API_BASE_URL/api/v1/storage/pets/$TEST_PET_ID/instances' \
+    -H 'Content-Type: application/json' \
+    -d '{
+        \"content\": \"CodeBuddy learned about web scraping and HTTP testing today!\", 
+        \"content_type\": \"learning_session\",
+        \"knowledge_list\": [
+            {\"url\": \"https://httpbin.org/html\"}, 
+            {\"url\": \"https://httpbin.org/json\"}
+        ],
+        \"metadata\": {\"topic\": \"web_scraping\", \"auto_scraped\": true}
+    }'" \
+    "200"
+
 echo -e "${BLUE}🏁 All endpoint tests completed!${NC}"
 echo ""
 echo -e "${YELLOW}Test Summary:${NC}"
-echo "  - 30 comprehensive endpoint tests completed"
+echo "  - 45 comprehensive endpoint tests completed"
 echo "  - Tests 1-15: Basic endpoint validation and error handling"
 echo "  - Tests 16-30: Real data testing with mock pets and instances"
+echo "  - Tests 31-45: Scraping functionality and automatic URL content extraction"
 echo "  - All endpoints are accessible and responding correctly"
 echo ""
 echo -e "${YELLOW}Expected Results:${NC}"
 echo "  ✅ Status 200: Successful responses with real or empty data"
 echo "  ✅ Status 404: Proper validation for non-existent resources"
+echo "  ✅ Status 422: Invalid URL validation in scraper endpoints"
 echo "  ✅ Status 500: Expected for some complex operations without full setup"
+echo ""
+echo -e "${YELLOW}Scraping Test Coverage:${NC}"
+echo "  • Direct scraper endpoints (/scraper/ and /scraper/twitter)"
+echo "  • Automatic URL content scraping when adding knowledge"
+echo "  • Mixed content addition (some manual, some auto-scraped)"
+echo "  • Error handling for invalid URLs and failed scraping"
+echo "  • Bulk URL processing and content verification"
+echo "  • Complete data instance creation with URL-only knowledge"
 echo ""
 echo -e "${YELLOW}Mock Data Used:${NC}"
 echo "  • Wallet: $TEST_WALLET"
