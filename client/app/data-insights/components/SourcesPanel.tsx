@@ -6,6 +6,7 @@ import { FaTwitter, FaLinkedin, FaExternalLinkAlt, FaFileAlt } from "react-icons
 import { cn } from "@/lib/utils";
 import { Knowledge } from "../types";
 import AddDataDrawer from "./AddDataDrawer";
+import DiscoverDrawer from "./DiscoverDrawer";
 
 interface SourcesPanelProps {
   petKnowledge: Knowledge[];
@@ -55,6 +56,7 @@ export default function SourcesPanel({
   onDataAdded
 }: SourcesPanelProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isDiscoverOpen, setIsDiscoverOpen] = useState(false);
 
   const handleDataAdded = () => {
     if (onDataAdded) {
@@ -83,7 +85,10 @@ export default function SourcesPanel({
             <Plus className="h-3 w-3" />
             ADD
           </button>
-          <button className="font-silkscreen text-sm font-bold text-gray-800 uppercase bg-gray-100 border-2 border-gray-600 shadow-[2px_2px_0_#374151] px-4 py-2 hover:bg-gray-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151] transition-all flex items-center gap-2 flex-1">
+          <button 
+            onClick={() => setIsDiscoverOpen(true)}
+            className="font-silkscreen text-sm font-bold text-gray-800 uppercase bg-gray-100 border-2 border-gray-600 shadow-[2px_2px_0_#374151] px-4 py-2 hover:bg-gray-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151] transition-all flex items-center gap-2 flex-1"
+          >
             <Search className="h-3 w-3" />
             DISCOVER
           </button>
@@ -154,6 +159,12 @@ export default function SourcesPanel({
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
         onDataAdded={handleDataAdded}
+      />
+
+      <DiscoverDrawer
+        isOpen={isDiscoverOpen}
+        onClose={() => setIsDiscoverOpen(false)}
+        onSourcesAdded={handleDataAdded}
       />
     </div>
   );
