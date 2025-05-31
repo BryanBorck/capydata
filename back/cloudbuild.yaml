@@ -1,0 +1,61 @@
+steps:
+  # Build the container image
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "gcr.io/zap-mas-451218/datagotchi-backend:$COMMIT_SHA",
+        ".",
+      ]
+    dir: "back"
+
+  # Push the container image to Container Registry
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["push", "gcr.io/zap-mas-451218/datagotchi-backend:$COMMIT_SHA"]
+
+  # Deploy to staging environment (development)
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: "gcloud"
+    args:
+      - "run"
+      - "deploy"
+      - "datagotchi-backend-staging"
+      - "--image=gcr.io/zap-mas-451218/datagotchi-backend:$COMMIT_SHA"
+      - "--region=us-central1"
+      - "--platform=managed"
+      - "--allow-unauthenticated"
+      - "--port=8080"
+      - "--memory=1Gi"
+      - "--cpu=1"
+      - "--max-instances=5"
+      - "--min-instances=0"
+      - "--timeout=300"
+      - "--set-env-vars=ENVIRONMENT=staging,APP_ENV=development"
+
+  # Deploy to production environment (only on main branch)
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: "gcloud"
+    args:
+      - "run"
+      - "deploy"
+      - "datagotchi-backend-prod"
+      - "--image=gcr.io/zap-mas-451218/datagotchi-backend:$COMMIT_SHA"
+      - "--region=us-central1"
+      - "--platform=managed"
+      - "--allow-unauthenticated"
+      - "--port=8080"
+      - "--memory=2Gi"
+      - "--cpu=2"
+      - "--max-instances=10"
+      - "--min-instances=1"
+      - "--timeout=300"
+      - "--set-env-vars=ENVIRONMENT=production,APP_ENV=production"
+    # Only deploy to production on main branch
+    condition: eq('$BRANCH_NAME', 'main')
+
+images:
+  - "gcr.io/zap-mas-451218/datagotchi-backend:$COMMIT_SHA"
+
+options:
+  logging: CLOUD_LOGGING_ONLY

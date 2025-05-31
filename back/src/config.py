@@ -1,6 +1,6 @@
 from functools import lru_cache
 from typing import Literal
-from pydantic import Field
+from pydantic import Field, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
 
@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     environment: Literal["development", "staging", "production", "local"] = Field(
         "development", env="ENVIRONMENT"
     )
+    # New APP_ENV field to distinguish between dev and prod Supabase
+    app_env: Literal["development", "production"] = Field(
+        "development", env="APP_ENV"
+    )
     debug: bool = Field(False, env="DEBUG")
     data_dir: str = Field("data", env="DATA_DIR")
     images_dir: str = Field("data/images", env="IMAGES_DIR")
@@ -26,9 +30,13 @@ class Settings(BaseSettings):
     # API KEYS
     NOTTE_API_KEY: str | None = Field(None, env="NOTTE_API_KEY")
     
-    # Supabase configuration (optional for backend)
-    supabase_url: str | None = Field(None, env="SUPABASE_URL")
-    supabase_key: str | None = Field(None, env="SUPABASE_KEY")
+    # Development Supabase configuration
+    supabase_url_dev: str | None = Field(None, env="SUPABASE_URL")
+    supabase_key_dev: str | None = Field(None, env="SUPABASE_KEY")
+    
+    # Production Supabase configuration
+    supabase_url_prod: str | None = Field(None, env="SUPABASE_URL_PROD")
+    supabase_key_prod: str | None = Field(None, env="SUPABASE_KEY_PROD")
 
     model_config = SettingsConfigDict(
         env_file=".env", 
@@ -36,6 +44,34 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore"  # Allow extra environment variables to be ignored
     )
+
+    @computed_field
+    @property
+    def supabase_url(self) -> str | None:
+        """Get the appropriate Supabase URL based on APP_ENV."""
+        if self.app_env == "production":
+            return self.supabase_url_prod
+        return self.supabase_url_dev
+
+    @computed_field
+    @property
+    def supabase_key(self) -> str | None:
+        """Get the appropriate Supabase key based on APP_ENV."""
+        if self.app_env == "production":
+            return self.supabase_key_prod
+        return self.supabase_key_dev
+
+    @computed_field
+    @property
+    def is_production(self) -> bool:
+        """Check if the app is running in production mode."""
+        return self.app_env == "production"
+
+    @computed_field
+    @property
+    def is_development(self) -> bool:
+        """Check if the app is running in development mode."""
+        return self.app_env == "development"
 
 
 @lru_cache()
