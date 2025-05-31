@@ -227,7 +227,7 @@ export default function LoginPage() {
       
       <div className="flex flex-col items-center justify-center text-center w-full mb-32 z-10">
         <AnimatedShinyText
-          className="inline-flex geist-sans uppercase text-6xl mb-4 items-center justify-center px-4 py-1 transition ease-out hover:text-neutral-600 hover:duration-300 hover:dark:text-neutral-400"
+          className="inline-flex geist-sans uppercase text-5xl mb-4 items-center justify-center px-4 py-1 transition ease-out hover:text-neutral-600 hover:duration-300 hover:dark:text-neutral-400"
         >
           <span>{APP_NAME}</span>
         </AnimatedShinyText>

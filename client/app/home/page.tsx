@@ -51,16 +51,6 @@ export default function HomePage() {
     return null; // Will redirect in useEffect
   }
 
-  const getRarityBadgeColor = (rarity: string) => {
-    switch (rarity?.toLowerCase()) {
-      case 'common': return 'bg-gradient-to-r from-slate-400 to-slate-600 text-white';
-      case 'rare': return 'bg-gradient-to-r from-blue-400 to-blue-600 text-white';
-      case 'epic': return 'bg-gradient-to-r from-purple-400 to-purple-600 text-white';
-      case 'legendary': return 'bg-gradient-to-r from-yellow-400 to-orange-600 text-white';
-      default: return 'bg-gray-400 text-gray-700';
-    }
-  };
-
   const getRarityGem = (rarity: string) => {
     switch (rarity?.toLowerCase()) {
       case 'common':
@@ -106,13 +96,43 @@ export default function HomePage() {
     }
   };
 
+  const getCapybaraImage = (rarity: string): string => {
+    switch (rarity?.toLowerCase()) {
+      case 'common':
+        return "/capybara/common/default.png";
+      case 'rare':
+        return "/capybara/common/default.png";
+      case 'epic':
+        return "/capybara/common/default.png";
+      case 'legendary':
+        return "/capybara/common/default.png";
+      default:
+        return "/capybara/common/default.png";
+    }
+  };
+
+  const getBackgroundImage = (rarity: string): string => {
+    switch (rarity?.toLowerCase()) {
+      case 'common':
+        return "/background/forest.png";
+      case 'rare':
+        return "/background/forest.png"; // For now, using same background
+      case 'epic':
+        return "/background/forest.png"; // For now, using same background
+      case 'legendary':
+        return "/background/forest.png"; // For now, using same background
+      default:
+        return "/background/forest.png";
+    }
+  };
+
   return (
     <main className="h-[100dvh] w-full relative overflow-hidden">
       {/* Forest Background */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="/background/forest.png"
-          alt="Forest Background"
+          src={selectedPet ? getBackgroundImage(selectedPet.rarity) : "/background/forest.png"}
+          alt="Background"
           fill
           className="object-cover"
           priority
@@ -222,7 +242,7 @@ export default function HomePage() {
       {selectedPet && (
         <div className="absolute bottom-28 left-1/2 transform -translate-x-1/2 z-10">
           <Image
-            src="/capybara/common/default.png"
+            src={getCapybaraImage(selectedPet.rarity)}
             alt={selectedPet.name}
             width={300}
             height={300}

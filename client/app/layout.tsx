@@ -18,16 +18,12 @@ export const metadata: Metadata = {
   description: "Datagotchi",
 };
 
-const sora = Sora({ subsets: ["latin"] });
 const dmMono = DM_Mono({
   weight: ["400"],
   style: ["normal", "italic"],
   subsets: ["latin"],
 });
-const rubik = Rubik({
-  subsets: ["latin"],
-  variable: "--font-rubik",
-});
+
 const alexBrush = Alex_Brush({
   weight: ["400"],
   subsets: ["latin"],
@@ -40,9 +36,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`light ${rubik.variable} ${alexBrush.variable}`}>
+    <html lang="en" className={`light ${geistSans.variable} ${geistMono.variable} ${alexBrush.variable}`}>
       <body
-        className={`${sora.className} ${dmMono.className} bg-white text-gray-900 antialiased w-full min-h-screen overflow-x-hidden`}
+        className={`bg-white text-gray-900 antialiased w-full min-h-screen overflow-x-hidden`}
       >
         <AppProviders>{children}</AppProviders>
       </body>

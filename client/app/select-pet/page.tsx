@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Heart, Zap, Users, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useUser } from "@/providers/user-provider";
 import { cn } from "@/lib/utils";
@@ -20,6 +19,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 
 type Pet = Database['public']['Tables']['pets']['Row'];
 
@@ -94,30 +94,32 @@ export default function SelectPetPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="flex min-h-[100dvh] w-full flex-col items-center overflow-hidden relative">
+      <FlickeringGrid
+        className="absolute inset-0 z-0 h-full w-full [mask-image:radial-gradient(1200px_circle_at_center,transparent,white)]"
+        squareSize={4}
+        gridGap={5}
+        color="#6B7280"
+        maxOpacity={0.3}
+        flickerChance={0.1}
+      />
+      
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 p-4">
-        <div className="flex items-center justify-between max-w-4xl mx-auto">
-          <div className="flex items-center space-x-4">
-            <Button variant="outline" size="sm" onClick={() => router.push('/home')}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-            <h1 className="text-xl font-bold">Select Pet</h1>
+      <header className="relative w-full z-10 h-16 flex items-center justify-center bg-white/60 backdrop-blur-sm border-b border-gray-200/60 shadow-sm">
+          <div className="absolute left-3 h-8 w-8 bg-violet-500 rounded-full flex items-center justify-center cursor-pointer" onClick={() => router.push('/home')}>
+            <ArrowLeft className="h-4 w-4 text-white" />
           </div>
-          <Badge variant="secondary">Choose Active Pet</Badge>
-        </div>
+          <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xl font-bold text-gray-700">Select Pet</div>
       </header>
 
       {/* Content */}
-      <main className="max-w-4xl mx-auto p-4 space-y-6">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Choose Your Active Pet 🐾</h2>
-          <p className="text-gray-600">
-            Select which pet you'd like to focus on. Your active pet will be featured on the home screen.
+      <main className="w-full mx-auto p-4 space-y-6">
+        <div className="text-center w-full">
+          <p className="text-gray-700 text-sm">
+            Select which pet you'd like to focus on. <br /> Your active pet will be featured on the home screen.
           </p>
           {activePetId && (
-            <p className="text-sm text-blue-600 mt-2">
+            <p className="text-sm text-violet-500 mt-2">
               Currently active: <span className="font-semibold">
                 {pets.find(p => p.id === activePetId)?.name || 'Unknown'}
               </span>
@@ -126,7 +128,7 @@ export default function SelectPetPage() {
         </div>
 
         {/* Pet Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {pets.map((pet) => {
             const isActive = pet.id === activePetId;
             
@@ -146,7 +148,7 @@ export default function SelectPetPage() {
                   </div>
                 )}
                 
-                <CardHeader className="pb-3">
+                <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">{pet.name}</CardTitle>
                     <Badge className={getRarityBadgeColor(pet.rarity)}>
@@ -158,38 +160,35 @@ export default function SelectPetPage() {
                   </p>
                 </CardHeader>
                 
-                <CardContent className="space-y-3">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center space-x-1">
-                        <Heart className="h-4 w-4 text-red-500" />
-                        <span>Health</span>
+                <CardContent className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="flex items-center justify-center rounded-full bg-red-100 p-1">
+                        <Heart className="h-4 w-4 text-red-600" />
                       </div>
-                      <span>{pet.health}/100</span>
+                      <span className="text-sm font-medium">Health</span>
                     </div>
-                    <Progress value={pet.health} className="h-2" />
+                    <span className="text-sm font-bold text-gray-700">{pet.health}</span>
                   </div>
                   
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center space-x-1">
-                        <Zap className="h-4 w-4 text-yellow-500" />
-                        <span>Strength</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="flex items-center justify-center rounded-full bg-yellow-100 p-1">
+                        <Zap className="h-4 w-4 text-yellow-600" />
                       </div>
-                      <span>{pet.strength}/100</span>
+                      <span className="text-sm font-medium">Strength</span>
                     </div>
-                    <Progress value={pet.strength} className="h-2" />
+                    <span className="text-sm font-bold text-gray-700">{pet.strength}</span>
                   </div>
                   
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center space-x-1">
-                        <Users className="h-4 w-4 text-blue-500" />
-                        <span>Social</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="flex items-center justify-center rounded-full bg-blue-100 p-1">
+                        <Users className="h-4 w-4 text-blue-600" />
                       </div>
-                      <span>{pet.social}/100</span>
+                      <span className="text-sm font-medium">Social</span>
                     </div>
-                    <Progress value={pet.social} className="h-2" />
+                    <span className="text-sm font-bold text-gray-700">{pet.social}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -212,26 +211,25 @@ export default function SelectPetPage() {
             <div className="px-4 pb-4">
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="flex items-center space-x-3 mb-3">
-                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-xl">
-                    🐾
-                  </div>
-                  <div>
-                    <h4 className="font-semibold">{selectedPet.name}</h4>
-                    <p className="text-sm text-gray-600">{selectedPet.rarity} rarity</p>
+                  <div className="flex items-center space-x-2">
+                    <h4 className="font-semibold text-lg">{selectedPet.name}</h4>
+                    <Badge className={getRarityBadgeColor(selectedPet.rarity)}>
+                      {selectedPet.rarity}
+                    </Badge>
                   </div>
                 </div>
                 
                 <div className="grid grid-cols-3 gap-2 text-center">
-                  <div className="bg-red-100 rounded p-2">
-                    <div className="font-semibold text-red-600">{selectedPet.health}</div>
+                  <div className="bg-gray-100 rounded p-2">
+                    <div className="font-semibold text-violet-600">{selectedPet.health}</div>
                     <div className="text-xs text-gray-600">Health</div>
                   </div>
-                  <div className="bg-yellow-100 rounded p-2">
-                    <div className="font-semibold text-yellow-600">{selectedPet.strength}</div>
+                  <div className="bg-gray-100 rounded p-2">
+                    <div className="font-semibold text-violet-600">{selectedPet.strength}</div>
                     <div className="text-xs text-gray-600">Strength</div>
                   </div>
-                  <div className="bg-blue-100 rounded p-2">
-                    <div className="font-semibold text-blue-600">{selectedPet.social}</div>
+                  <div className="bg-gray-100 rounded p-2">
+                    <div className="font-semibold text-violet-600">{selectedPet.social}</div>
                     <div className="text-xs text-gray-600">Social</div>
                   </div>
                 </div>
@@ -243,7 +241,7 @@ export default function SelectPetPage() {
             <Button
               onClick={confirmSelection}
               disabled={isLoading}
-              className="bg-blue-500 hover:bg-blue-600"
+              className="bg-violet-500 hover:bg-violet-600"
             >
               {isLoading ? (
                 <>
