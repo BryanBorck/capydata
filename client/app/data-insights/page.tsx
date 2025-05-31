@@ -20,56 +20,22 @@ import { ScrollArea } from "@/components/scroll-area";
 import { Separator } from "@/components/separator";
 import { APP_NAME } from "@/lib/constants";
 
+// Import components and types
+import SourcesPanel from "./components/SourcesPanel";
+import ChatPanel from "./components/ChatPanel";
+import StudioPanel from "./components/StudioPanel";
+import NavigationTabs, { TabConfig } from "./components/NavigationTabs";
+import { 
+  Knowledge, 
+  DataInstance, 
+  ChatMessage, 
+  UserStats, 
+  Achievement, 
+  KnowledgeSummary, 
+  GeneratedContent 
+} from "./types";
+
 const API_BASE_URL = 'http://localhost:8000';
-
-interface Knowledge {
-  id: string;
-  url?: string;
-  content: string;
-  title?: string;
-  created_at: string;
-  metadata?: Record<string, unknown>;
-  embeddings?: number[];
-}
-
-interface DataInstance {
-  id: string;
-  content: string;
-  content_type: string;
-  created_at: string;
-  metadata?: Record<string, unknown>;
-  knowledge?: Knowledge[];
-}
-
-interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-  sources?: Knowledge[];
-  isGenerating?: boolean;
-}
-
-interface UserStats {
-  totalKnowledge: number;
-  totalInstances: number;
-  avgDailyActivity: number;
-  knowledgeGrowth: number;
-  topCategories: string[];
-  streakDays: number;
-  xpPoints: number;
-  level: number;
-}
-
-interface Achievement {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-  unlocked: boolean;
-  progress: number;
-  maxProgress: number;
-}
 
 export default function DataInsightsPage() {
   const router = useRouter();
@@ -88,19 +54,15 @@ export default function DataInsightsPage() {
   // UI state
   const [selectedKnowledgeIds, setSelectedKnowledgeIds] = useState<Set<string>>(new Set());
   const [activePanel, setActivePanel] = useState<'sources' | 'chat' | 'studio'>('chat');
-  const [showCitations, setShowCitations] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
   // Content generation state
   const [isGeneratingContent, setIsGeneratingContent] = useState(false);
-  const [generatedContent, setGeneratedContent] = useState<{type: string, content: string} | null>(null);
+  const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
 
   // State for dynamic knowledge summary
-  const [knowledgeSummary, setKnowledgeSummary] = useState<{title: string, summary: string, icon: string} | null>(null);
+  const [knowledgeSummary, setKnowledgeSummary] = useState<KnowledgeSummary | null>(null);
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
-
-  // Chat scroll ref
-  const chatMessagesRef = useRef<HTMLDivElement>(null);
 
   // Mobile detection
   useEffect(() => {
@@ -177,8 +139,6 @@ export default function DataInsightsPage() {
         // Generate user stats with actual data
         generateUserStats(instances, knowledge);
         generateAchievements(instances, knowledge);
-        
-        // Initialize welcome message will be handled by the knowledge summary effect
         
       } catch (error) {
         console.error('Error fetching pet data:', error);
@@ -452,13 +412,6 @@ export default function DataInsightsPage() {
     return '📄';
   }, []);
 
-  // Auto-scroll to bottom when messages change
-  useEffect(() => {
-    if (chatMessagesRef.current) {
-      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
-    }
-  }, [chatMessages, isGenerating]);
-
   const handleSendMessage = async () => {
     if (!currentMessage.trim() || !selectedPet || isGenerating) return;
 
@@ -562,6 +515,53 @@ export default function DataInsightsPage() {
     }
   };
 
+  const handleDataAdded = async () => {
+    if (!selectedPet) return;
+    
+    // Refetch pet data after new content is added
+    try {
+      const [instancesResponse, knowledgeResponse] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/v1/storage/pets/${selectedPet.id}/instances?limit=100`),
+        fetch(`${API_BASE_URL}/api/v1/storage/pets/${selectedPet.id}/knowledge?limit=100`)
+      ]);
+
+      let instances: DataInstance[] = [];
+      let knowledge: Knowledge[] = [];
+
+      if (instancesResponse.ok) {
+        instances = await instancesResponse.json();
+        setPetInstances(instances);
+      }
+
+      if (knowledgeResponse.ok) {
+        knowledge = await knowledgeResponse.json();
+        setPetKnowledge(knowledge);
+        
+        // Keep existing selections if possible, or select all if new data
+        const existingSelections = new Set([...selectedKnowledgeIds].filter(id => 
+          knowledge.some(k => k.id === id)
+        ));
+        
+        // If no existing selections or all new data, select all
+        if (existingSelections.size === 0) {
+          setSelectedKnowledgeIds(new Set(knowledge.map(k => k.id)));
+        } else {
+          setSelectedKnowledgeIds(existingSelections);
+        }
+      }
+      
+      // Regenerate stats and achievements
+      generateUserStats(instances, knowledge);
+      generateAchievements(instances, knowledge);
+      
+      // Clear summary to trigger regeneration
+      setKnowledgeSummary(null);
+      
+    } catch (error) {
+      console.error('Error refetching pet data:', error);
+    }
+  };
+
   const generateContent = async (contentType: string) => {
     if (!selectedPet || petKnowledge.length === 0) {
       toast.error("Please add some knowledge sources first");
@@ -606,12 +606,23 @@ export default function DataInsightsPage() {
     }
   };
 
-  const suggestedQuestions = [
-    "What are the main topics covered in these sources?",
-    "Can you summarize the key insights from this knowledge base?",
-    "What are the most important findings or conclusions?",
-    "How do these sources relate to each other?",
-    "What practical applications can be derived from this information?"
+  // Navigation tabs configuration
+  const navigationTabs: TabConfig[] = [
+    {
+      id: 'sources',
+      label: 'SOURCES',
+      icon: FileText
+    },
+    {
+      id: 'chat',
+      label: 'CHAT',
+      icon: MessageCircle
+    },
+    {
+      id: 'studio',
+      label: 'STUDIO',
+      icon: Sparkles
+    }
   ];
 
   if (!isAuthenticated || pets.length === 0) {
@@ -650,447 +661,49 @@ export default function DataInsightsPage() {
       </header>
 
       {/* Navigation Tabs */}
-      <div className="relative z-10 px-6 py-4 bg-white border-b-4 border-gray-800 shadow-[0_4px_0_#374151]">
-        <div className="flex items-center space-x-4">
-          <button 
-            className={cn(
-              "font-silkscreen text-xs font-bold uppercase px-4 py-2 border-2 shadow-[2px_2px_0_#374151] transition-all",
-              activePanel === 'sources' 
-                ? "bg-blue-100 border-blue-600 text-blue-800 shadow-[2px_2px_0_#1e40af]" 
-                : "bg-gray-100 border-gray-600 text-gray-800 hover:bg-gray-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151]"
-            )}
-            onClick={() => setActivePanel('sources')}
-          >
-            <div className="flex items-center space-x-2">
-              <FileText className="h-3 w-3" />
-              <span>SOURCES</span>
-            </div>
-          </button>
-          <button 
-            className={cn(
-              "font-silkscreen text-xs font-bold uppercase px-4 py-2 border-2 shadow-[2px_2px_0_#374151] transition-all",
-              activePanel === 'chat' 
-                ? "bg-blue-100 border-blue-600 text-blue-800 shadow-[2px_2px_0_#1e40af]" 
-                : "bg-gray-100 border-gray-600 text-gray-800 hover:bg-gray-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151]"
-            )}
-            onClick={() => setActivePanel('chat')}
-          >
-            <div className="flex items-center space-x-2">
-              <MessageCircle className="h-3 w-3" />
-              <span>CHAT</span>
-            </div>
-          </button>
-          <button 
-            className={cn(
-              "font-silkscreen text-xs font-bold uppercase px-4 py-2 border-2 shadow-[2px_2px_0_#374151] transition-all",
-              activePanel === 'studio' 
-                ? "bg-blue-100 border-blue-600 text-blue-800 shadow-[2px_2px_0_#1e40af]" 
-                : "bg-gray-100 border-gray-600 text-gray-800 hover:bg-gray-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151]"
-            )}
-            onClick={() => setActivePanel('studio')}
-          >
-            <div className="flex items-center space-x-2">
-              <Sparkles className="h-3 w-3" />
-              <span>STUDIO</span>
-            </div>
-          </button>
-        </div>
-      </div>
+      <NavigationTabs
+        tabs={navigationTabs}
+        activeTab={activePanel}
+        onTabChange={(tabId) => setActivePanel(tabId as 'sources' | 'chat' | 'studio')}
+      />
 
       {/* Main Content */}
       <div className="relative z-10 h-full overflow-hidden">
         {activePanel === 'sources' && (
-          <div className="h-full flex flex-col px-6 py-6">
-            <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-6 mb-6">
-              <div className="mb-6">
-                <div className="font-silkscreen text-xl font-bold text-gray-800 uppercase mb-2 flex items-center gap-3">
-                  <FileText className="h-6 w-6" />
-                  DATA SOURCES
-                </div>
-                <div className="font-silkscreen text-xs text-gray-600 uppercase">
-                  MANAGE YOUR KNOWLEDGE BASE
-                </div>
-              </div>
-              
-              <div className="flex space-x-3 mb-6">
-                <button 
-                  onClick={() => router.push('/add-data')}
-                  className="font-silkscreen text-xs font-bold text-white uppercase bg-green-600 border-2 border-green-800 shadow-[2px_2px_0_#14532d] px-4 py-2 hover:bg-green-500 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#14532d] transition-all flex items-center gap-2 flex-1"
-                >
-                  <Plus className="h-3 w-3" />
-                  ADD DATA
-                </button>
-                <button className="font-silkscreen text-xs font-bold text-gray-800 uppercase bg-gray-100 border-2 border-gray-600 shadow-[2px_2px_0_#374151] px-4 py-2 hover:bg-gray-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151] transition-all flex items-center gap-2 flex-1">
-                  <Search className="h-3 w-3" />
-                  DISCOVER
-                </button>
-              </div>
-              
-              <div className="flex items-center space-x-3 mb-4">
-                <button
-                  onClick={toggleSelectAll}
-                  className="flex items-center space-x-2 font-silkscreen text-xs text-gray-800 hover:text-gray-900 uppercase"
-                >
-                  <div className={cn(
-                    "w-4 h-4 border-2 border-gray-600 flex items-center justify-center",
-                    selectedKnowledgeIds.size === petKnowledge.length ? "bg-blue-600 border-blue-600" : "bg-white"
-                  )}>
-                    {selectedKnowledgeIds.size === petKnowledge.length && (
-                      <Check className="h-2 w-2 text-white" />
-                    )}
-                  </div>
-                  <span>SELECT ALL ({petKnowledge.length})</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] flex-1 overflow-hidden">
-              <div className="p-4 border-b-2 border-gray-600 bg-gray-100">
-                <div className="font-silkscreen text-sm font-bold text-gray-800 uppercase">
-                  KNOWLEDGE ITEMS ({petKnowledge.length})
-                </div>
-              </div>
-              <div className="h-full overflow-y-auto p-4">
-                <div className="space-y-3">
-                  {petKnowledge.map((knowledge) => (
-                    <div key={knowledge.id} className="bg-gray-50 border-2 border-gray-600 shadow-[2px_2px_0_#374151] p-3 flex items-center space-x-3 group hover:bg-gray-100 transition-colors">
-                      <button
-                        onClick={() => toggleKnowledgeSelection(knowledge.id)}
-                        className="flex-shrink-0"
-                      >
-                        <div className={cn(
-                          "w-4 h-4 border-2 border-gray-600 flex items-center justify-center",
-                          selectedKnowledgeIds.has(knowledge.id) ? "bg-blue-600 border-blue-600" : "bg-white"
-                        )}>
-                          {selectedKnowledgeIds.has(knowledge.id) && (
-                            <Check className="h-2 w-2 text-white" />
-                          )}
-                        </div>
-                      </button>
-                      
-                      <div className="flex items-center space-x-3 flex-1 min-w-0">
-                        <div className="w-8 h-8 bg-red-600 border-2 border-red-800 shadow-[2px_2px_0_#7f1d1d] flex items-center justify-center flex-shrink-0">
-                          <FileText className="h-4 w-4 text-white" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-silkscreen text-xs font-bold text-gray-800 uppercase truncate">
-                            {knowledge.url || knowledge.title || `TEXT CONTENT ${knowledge.id.slice(0, 8)}`}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+          <SourcesPanel
+            petKnowledge={petKnowledge}
+            selectedKnowledgeIds={selectedKnowledgeIds}
+            onToggleKnowledgeSelection={toggleKnowledgeSelection}
+            onToggleSelectAll={toggleSelectAll}
+            onDataAdded={handleDataAdded}
+          />
         )}
 
         {activePanel === 'chat' && (
-          <div className="h-full flex flex-col px-6 py-6">
-            {/* Knowledge Header - Only show when no user messages */}
-            {chatMessages.filter(m => m.role === 'user').length === 0 && (
-              <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-6 mb-6">
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-blue-100 border-2 border-blue-600 shadow-[2px_2px_0_#1e40af] flex items-center justify-center flex-shrink-0">
-                    {isLoadingSummary ? (
-                      <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-                    ) : (
-                      <div className="text-2xl">{knowledgeSummary?.icon || '📚'}</div>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    {isLoadingSummary ? (
-                      <div className="space-y-3">
-                        <div className="h-6 bg-gray-200 border-2 border-gray-400 animate-pulse"></div>
-                        <div className="h-4 bg-gray-200 border-2 border-gray-400 w-32 animate-pulse"></div>
-                        <div className="space-y-2">
-                          <div className="h-4 bg-gray-200 border-2 border-gray-400 animate-pulse"></div>
-                          <div className="h-4 bg-gray-200 border-2 border-gray-400 w-3/4 animate-pulse"></div>
-                        </div>
-                      </div>
-                    ) : knowledgeSummary ? (
-                      <>
-                        <h1 className="font-silkscreen text-lg font-bold text-gray-800 uppercase mb-2">
-                          {knowledgeSummary.title}
-                        </h1>
-                        <p className="font-silkscreen text-xs text-gray-600 leading-relaxed mb-4 uppercase">
-                          {knowledgeSummary.summary}
-                        </p>
-                        <div className="flex items-center space-x-3">
-                          <button className="font-silkscreen text-xs font-bold text-gray-800 uppercase bg-gray-100 border-2 border-gray-600 shadow-[2px_2px_0_#374151] px-3 py-1 hover:bg-gray-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151] transition-all">
-                            <Copy className="h-3 w-3" />
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <h1 className="font-silkscreen text-lg font-bold text-gray-800 uppercase mb-2">
-                          NO KNOWLEDGE SOURCES
-                        </h1>
-                        <p className="font-silkscreen text-xs text-gray-600 mb-4 uppercase">0 SOURCES</p>
-                        <p className="font-silkscreen text-xs text-gray-600 leading-relaxed uppercase">
-                          ADD SOME KNOWLEDGE SOURCES TO START EXPLORING YOUR DATA.
-                        </p>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Chat Messages */}
-            <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] flex-1 flex flex-col overflow-hidden">
-              <div className="p-4 border-b-2 border-gray-600 bg-gray-100">
-                <div className="font-silkscreen text-sm font-bold text-gray-800 uppercase">
-                  CHAT WITH YOUR DATA
-                </div>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto p-4 pb-32">
-                <div className="space-y-4">
-                  {chatMessages.filter(m => m.id !== 'welcome').map((message) => (
-                    <div key={message.id} className="space-y-3">
-                      {message.role === 'user' ? (
-                        <div className="flex justify-end">
-                          <div className="bg-blue-600 border-2 border-blue-800 shadow-[2px_2px_0_#1e40af] text-white p-3 max-w-[80%]">
-                            <p className="font-silkscreen text-xs uppercase">{message.content}</p>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex justify-start">
-                          <div className="bg-gray-100 border-2 border-gray-600 shadow-[2px_2px_0_#374151] text-gray-800 p-3 max-w-[80%]">
-                            <p className="font-silkscreen text-xs uppercase whitespace-pre-wrap">{message.content}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  
-                  {isGenerating && (
-                    <div className="flex justify-start">
-                      <div className="bg-gray-100 border-2 border-gray-600 shadow-[2px_2px_0_#374151] p-3">
-                        <div className="flex items-center space-x-2">
-                          <Loader2 className="h-4 w-4 animate-spin text-gray-600" />
-                          <span className="font-silkscreen text-xs text-gray-600 uppercase">THINKING...</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Fixed Chat Input Area at Bottom */}
-              <div className="border-t-2 border-gray-600 bg-gray-50 p-4">
-                <div className="space-y-3">
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      placeholder="TYPE YOUR MESSAGE..."
-                      value={currentMessage}
-                      onChange={(e) => setCurrentMessage(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
-                      className="font-silkscreen text-xs uppercase bg-white border-2 border-gray-600 shadow-[2px_2px_0_#374151] px-3 py-2 flex-1 placeholder-gray-500 focus:outline-none focus:border-blue-600"
-                      disabled={isGenerating}
-                    />
-                    <button 
-                      onClick={handleSendMessage}
-                      disabled={isGenerating || !currentMessage.trim()}
-                      className="font-silkscreen text-xs font-bold text-white uppercase bg-blue-600 border-2 border-blue-800 shadow-[2px_2px_0_#1e40af] px-4 py-2 hover:bg-blue-500 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#1e40af] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Send className="h-3 w-3" />
-                    </button>
-                  </div>
-                  
-                  {/* Suggested Questions */}
-                  <div>
-                    <div className="font-silkscreen text-xs text-gray-600 uppercase mb-2">
-                      QUICK PROMPTS:
-                    </div>
-                    <div className="flex space-x-2 overflow-x-auto">
-                      {suggestedQuestions.slice(0, 3).map((question, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setCurrentMessage(question)}
-                          className="font-silkscreen text-xs text-gray-800 uppercase bg-white border-2 border-gray-600 shadow-[2px_2px_0_#374151] px-3 py-1 hover:bg-gray-100 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151] transition-all whitespace-nowrap"
-                        >
-                          {question.length > 30 ? question.substring(0, 30) + '...' : question}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <ChatPanel
+            chatMessages={chatMessages}
+            currentMessage={currentMessage}
+            isGenerating={isGenerating}
+            knowledgeSummary={knowledgeSummary}
+            isLoadingSummary={isLoadingSummary}
+            onCurrentMessageChange={setCurrentMessage}
+            onSendMessage={handleSendMessage}
+          />
         )}
 
         {activePanel === 'studio' && (
-          <div className="h-full overflow-auto px-6 py-6">
-            <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-6">
-              <div className="mb-6">
-                <div className="font-silkscreen text-xl font-bold text-gray-800 uppercase mb-2 flex items-center gap-3">
-                  <Sparkles className="h-6 w-6" />
-                  CONTENT STUDIO
-                </div>
-                <div className="font-silkscreen text-xs text-gray-600 uppercase">
-                  GENERATE AI-POWERED CONTENT
-                </div>
-              </div>
-              
-              {/* Content Generation Grid */}
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <button 
-                  onClick={() => generateContent('study_guide')}
-                  disabled={isGeneratingContent || petKnowledge.length === 0}
-                  className="font-silkscreen text-xs font-bold text-gray-800 uppercase bg-blue-100 border-2 border-blue-600 shadow-[2px_2px_0_#1e40af] p-4 hover:bg-blue-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#1e40af] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center gap-2"
-                >
-                  {isGeneratingContent && generatedContent?.type === 'study_guide' ? (
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  ) : (
-                    <BookOpen className="h-6 w-6" />
-                  )}
-                  <span>STUDY GUIDE</span>
-                </button>
-                
-                <button 
-                  onClick={() => generateContent('briefing')}
-                  disabled={isGeneratingContent || petKnowledge.length === 0}
-                  className="font-silkscreen text-xs font-bold text-gray-800 uppercase bg-green-100 border-2 border-green-600 shadow-[2px_2px_0_#14532d] p-4 hover:bg-green-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#14532d] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center gap-2"
-                >
-                  {isGeneratingContent && generatedContent?.type === 'briefing' ? (
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  ) : (
-                    <FileText className="h-6 w-6" />
-                  )}
-                  <span>BRIEFING DOC</span>
-                </button>
-                
-                <button 
-                  onClick={() => generateContent('faq')}
-                  disabled={isGeneratingContent || petKnowledge.length === 0}
-                  className="font-silkscreen text-xs font-bold text-gray-800 uppercase bg-purple-100 border-2 border-purple-600 shadow-[2px_2px_0_#581c87] p-4 hover:bg-purple-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#581c87] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center gap-2"
-                >
-                  {isGeneratingContent && generatedContent?.type === 'faq' ? (
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  ) : (
-                    <MessageCircle className="h-6 w-6" />
-                  )}
-                  <span>FAQ</span>
-                </button>
-                
-                <button 
-                  onClick={() => generateContent('timeline')}
-                  disabled={isGeneratingContent || petKnowledge.length === 0}
-                  className="font-silkscreen text-xs font-bold text-gray-800 uppercase bg-orange-100 border-2 border-orange-600 shadow-[2px_2px_0_#c2410c] p-4 hover:bg-orange-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#c2410c] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center gap-2"
-                >
-                  {isGeneratingContent && generatedContent?.type === 'timeline' ? (
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  ) : (
-                    <Target className="h-6 w-6" />
-                  )}
-                  <span>TIMELINE</span>
-                </button>
-              </div>
-
-              {/* Knowledge Summary */}
-              {knowledgeSummary && petKnowledge.length > 0 && (
-                <div className="bg-gray-50 border-2 border-gray-600 shadow-[2px_2px_0_#374151] p-4 mb-6">
-                  <div className="font-silkscreen text-sm font-bold text-gray-800 uppercase mb-2">
-                    KNOWLEDGE OVERVIEW
-                  </div>
-                  <div className="font-silkscreen text-xs text-gray-600 uppercase leading-relaxed">
-                    {knowledgeSummary.summary.length > 200 
-                      ? knowledgeSummary.summary.substring(0, 200) + '...' 
-                      : knowledgeSummary.summary}
-                  </div>
-                </div>
-              )}
-
-              {/* No Knowledge Sources Warning */}
-              {petKnowledge.length === 0 && (
-                <div className="bg-yellow-100 border-2 border-yellow-600 shadow-[2px_2px_0_#92400e] p-4">
-                  <div className="flex items-start space-x-3">
-                    <Info className="h-5 w-5 text-yellow-800 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <h3 className="font-silkscreen text-sm font-bold text-yellow-800 uppercase">NO KNOWLEDGE SOURCES</h3>
-                      <p className="font-silkscreen text-xs text-yellow-700 mt-1 uppercase">
-                        ADD KNOWLEDGE SOURCES TO START GENERATING CONTENT.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Generated Content Display */}
-              {generatedContent && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h2 className="font-silkscreen text-lg font-bold text-gray-800 uppercase">
-                      {generatedContent.type.replace('_', ' ')}
-                    </h2>
-                    <div className="flex items-center space-x-2">
-                      <button 
-                        onClick={() => copyMessage(generatedContent.content)}
-                        className="font-silkscreen text-xs font-bold text-gray-800 uppercase bg-gray-100 border-2 border-gray-600 shadow-[2px_2px_0_#374151] px-3 py-1 hover:bg-gray-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151] transition-all"
-                      >
-                        <Copy className="h-3 w-3" />
-                      </button>
-                      <button 
-                        onClick={() => setGeneratedContent(null)}
-                        className="font-silkscreen text-xs font-bold text-red-800 uppercase bg-red-100 border-2 border-red-600 shadow-[2px_2px_0_#7f1d1d] px-3 py-1 hover:bg-red-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#7f1d1d] transition-all"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-white border-2 border-gray-600 shadow-[2px_2px_0_#374151]">
-                    <div className="p-6">
-                      <div className="font-silkscreen text-xs text-gray-800 leading-relaxed whitespace-pre-wrap">
-                        {generatedContent.content}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-3">
-                    <button className="font-silkscreen text-xs font-bold text-gray-800 uppercase bg-gray-100 border-2 border-gray-600 shadow-[2px_2px_0_#374151] px-4 py-2 hover:bg-gray-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151] transition-all flex items-center gap-2">
-                      <FileText className="h-3 w-3" />
-                      SAVE TO NOTE
-                    </button>
-                    <button 
-                      onClick={() => copyMessage(generatedContent.content)}
-                      className="font-silkscreen text-xs font-bold text-blue-800 uppercase bg-blue-100 border-2 border-blue-600 shadow-[2px_2px_0_#1e40af] px-4 py-2 hover:bg-blue-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#1e40af] transition-all flex items-center gap-2"
-                    >
-                      <Copy className="h-3 w-3" />
-                      COPY
-                    </button>
-                    <button 
-                      onClick={() => generateContent(generatedContent.type)}
-                      disabled={isGeneratingContent}
-                      className="font-silkscreen text-xs font-bold text-green-800 uppercase bg-green-100 border-2 border-green-600 shadow-[2px_2px_0_#14532d] px-4 py-2 hover:bg-green-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#14532d] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                    >
-                      {isGeneratingContent ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <Sparkles className="h-3 w-3" />
-                      )}
-                      REGENERATE
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          <StudioPanel
+            petKnowledge={petKnowledge}
+            knowledgeSummary={knowledgeSummary}
+            isGeneratingContent={isGeneratingContent}
+            generatedContent={generatedContent}
+            onGenerateContent={generateContent}
+            onSetGeneratedContent={setGeneratedContent}
+          />
         )}
       </div>
       
       <Toaster />
     </main>
   );
-}
-
-const copyMessage = (content: string) => {
-  navigator.clipboard.writeText(content);
-  toast.success("Copied to clipboard!");
-}; 
+} 
