@@ -779,10 +779,6 @@ export default function DataInsightsPage() {
                           {knowledgeSummary.summary}
                         </p>
                         <div className="flex items-center space-x-3">
-                          <Button variant="outline" size="sm" className="border-gray-300 text-gray-700 hover:bg-gray-50">
-                            <FileText className="h-4 w-4 mr-2" />
-                            Save to note
-                          </Button>
                           <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
                             <Copy className="h-4 w-4" />
                           </Button>
@@ -901,18 +897,11 @@ export default function DataInsightsPage() {
             <div className="p-6 space-y-4">
               {/* Header */}
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">Notes</h2>
+                <h2 className="text-xl font-semibold text-gray-900">Actions</h2>
                 <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </div>
-
-              {/* Add Note Button */}
-              <Button variant="outline" className="w-full border-gray-300 rounded-full text-gray-700 hover:bg-gray-50 h-8">
-                <Plus className="h-4 w-4 mr-2" />
-                Add note
-              </Button>
-
               {/* Content Generation Grid */}
               <div className="grid grid-cols-2 gap-3">
                 <Button 
@@ -926,7 +915,7 @@ export default function DataInsightsPage() {
                   ) : (
                     <>
                       <BookOpen className="h-5 w-5 mb-1" />
-                      <span className="text-xs">Study guide</span>
+                      <span className="text-xs font-bold">Study guide</span>
                     </>
                   )}
                 </Button>
@@ -941,7 +930,7 @@ export default function DataInsightsPage() {
                   ) : (
                     <>
                       <FileText className="h-5 w-5 mb-1" />
-                      <span className="text-xs">Briefing doc</span>
+                      <span className="text-xs font-bold">Briefing doc</span>
                     </>
                   )}
                 </Button>
@@ -956,7 +945,7 @@ export default function DataInsightsPage() {
                   ) : (
                     <>
                       <MessageCircle className="h-5 w-5 mb-1" />
-                      <span className="text-xs">FAQ</span>
+                      <span className="text-xs font-bold">FAQ</span>
                     </>
                   )}
                 </Button>
@@ -971,7 +960,7 @@ export default function DataInsightsPage() {
                   ) : (
                     <>
                       <Target className="h-5 w-5 mb-1" />
-                      <span className="text-xs">Timeline</span>
+                      <span className="text-xs font-bold">Timeline</span>
                     </>
                   )}
                 </Button>
