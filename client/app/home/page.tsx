@@ -51,51 +51,58 @@ export default function HomePage() {
     return null; // Will redirect in useEffect
   }
 
-  const actions = [
-    {
-      title: "Select Pet",
-      icon: PawPrint,
-      color: "bg-pink-500 hover:bg-pink-600",
-      route: "/select-pet",
-      available: true
-    },
-    {
-      title: "Create Pet",
-      icon: Plus,
-      color: "bg-green-500 hover:bg-green-600",
-      route: "/create-pet",
-      available: true
-    },
-    {
-      title: "Add Data",
-      icon: Database,
-      color: "bg-blue-500 hover:bg-blue-600",
-      route: "/add-data",
-      available: !!selectedPet
-    },
-    {
-      title: "Insights",
-      icon: BarChart3,
-      color: "bg-orange-500 hover:bg-orange-600",
-      route: "/data-insights",
-      available: !!selectedPet
-    },
-    {
-      title: "Play Game",
-      icon: Gamepad2,
-      color: "bg-purple-500 hover:bg-purple-600",
-      route: "/play-game",
-      available: !!selectedPet
-    }
-  ];
-
   const getRarityBadgeColor = (rarity: string) => {
     switch (rarity?.toLowerCase()) {
-      case 'common': return 'bg-gray-100 text-gray-700';
-      case 'rare': return 'bg-blue-100 text-blue-700';
-      case 'epic': return 'bg-purple-100 text-purple-700';
-      case 'legendary': return 'bg-yellow-100 text-yellow-700';
-      default: return 'bg-gray-100 text-gray-700';
+      case 'common': return 'bg-gradient-to-r from-slate-400 to-slate-600 text-white';
+      case 'rare': return 'bg-gradient-to-r from-blue-400 to-blue-600 text-white';
+      case 'epic': return 'bg-gradient-to-r from-purple-400 to-purple-600 text-white';
+      case 'legendary': return 'bg-gradient-to-r from-yellow-400 to-orange-600 text-white';
+      default: return 'bg-gray-400 text-gray-700';
+    }
+  };
+
+  const getRarityGem = (rarity: string) => {
+    switch (rarity?.toLowerCase()) {
+      case 'common':
+        return (
+          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-gray-300 to-gray-500 border-2 border-gray-600 shadow-lg relative">
+            <div className="absolute inset-1 rounded-full bg-gradient-to-br from-gray-200 to-gray-400 opacity-60"></div>
+            <div className="absolute top-1 left-1 w-1.5 h-1.5 rounded-full bg-white opacity-80"></div>
+          </div>
+        );
+      case 'rare':
+        return (
+          <div className="w-6 h-6 bg-gradient-to-br from-blue-400 to-blue-600 border-2 border-blue-800 shadow-lg relative transform rotate-45">
+            <div className="absolute inset-0.5 bg-gradient-to-br from-blue-300 to-blue-500 opacity-60"></div>
+            <div className="absolute top-0.5 left-0.5 w-1 h-1 bg-white opacity-90"></div>
+          </div>
+        );
+      case 'epic':
+        return (
+          <div
+            className="w-5 h-7 bg-gradient-to-b from-violet-400 to-violet-600 border-2 border-violet-800 shadow-lg relative"
+            style={{ clipPath: "polygon(50% 0%, 0% 100%, 100% 100%)" }}
+          >
+            <div className="absolute inset-0.5 bg-gradient-to-b from-violet-300 to-violet-500 opacity-60"></div>
+            <div className="absolute top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white opacity-90"></div>
+          </div>
+        );
+      case 'legendary':
+        return (
+          <div className="w-6 h-6 bg-gradient-to-br from-yellow-400 to-orange-500 border-2 border-orange-700 shadow-lg relative">
+            <div className="absolute inset-0.5 bg-gradient-to-br from-yellow-300 to-orange-400 opacity-70"></div>
+            <div className="absolute inset-1 bg-gradient-to-br from-yellow-200 to-orange-300 opacity-50"></div>
+            <div className="absolute top-1 left-1 w-1 h-1 bg-white opacity-95"></div>
+            <div className="absolute bottom-1 right-1 w-0.5 h-0.5 bg-white opacity-80"></div>
+          </div>
+        );
+      default:
+        return (
+          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-gray-300 to-gray-500 border-2 border-gray-600 shadow-lg relative">
+            <div className="absolute inset-1 rounded-full bg-gradient-to-br from-gray-200 to-gray-400 opacity-60"></div>
+            <div className="absolute top-1 left-1 w-1.5 h-1.5 rounded-full bg-white opacity-80"></div>
+          </div>
+        );
     }
   };
 
@@ -116,16 +123,26 @@ export default function HomePage() {
       </div>
       
       {/* Top Header Bar */}
-      <header className="relative z-10 bg-white/30 backdrop-blur-md border-b border-white/40 px-3 sm:px-4 py-2 sm:py-3">
-        <div className="flex items-center justify-between">
+      <header className="relative z-10 px-3 py-2 bg-white/60 backdrop-blur-sm border-b border-white/60 rounded-b-3xl">
+        <div className="flex items-center justify-between relative">
           {/* Left: App Name */}
           <div className="flex items-center space-x-1 sm:space-x-2">
-            <AnimatedShinyText className="text-lg sm:text-xl font-bold text-green-900">
+            <div className="text-xs font-bold text-violet-500 uppercase">
               Datagotchi
-            </AnimatedShinyText>
-            <Badge className="bg-green-200 text-green-900 text-xs">
-              Game
-            </Badge>
+            </div>
+          </div>
+
+          {/* Center: User Info Badge - Absolutely positioned to be perfectly centered */}
+          <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center space-x-2 bg-white/50 backdrop-blur-sm px-4 py-1 rounded-full border border-white/60 shadow-md">
+            <Avatar className="h-5 w-5">
+              <AvatarFallback className="bg-gradient-to-r from-violet-400 to-violet-600 text-white text-xs">
+                {user?.username?.charAt(0).toUpperCase() || '?'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="text-xs">
+              <div className="font-medium text-gray-700">{user?.username}</div>
+              <div className="text-gray-500 text-[10px]">{pets.length} pets</div>
+            </div>
           </div>
 
           {/* Right: Settings only */}
@@ -134,7 +151,7 @@ export default function HomePage() {
               variant="outline"
               size="sm"
               onClick={() => router.push('/settings')}
-              className="bg-white/30 border-white/60 text-green-900 hover:bg-white/40 px-1.5 sm:px-2"
+              className="bg-white/30 border-white/60 text-violet-500 hover:bg-white/40 px-1.5 sm:px-2"
             >
               <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
@@ -142,48 +159,60 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* User Info (Top Left, below header) */}
-      <div className="absolute top-14 sm:top-16 left-3 sm:left-4 z-20">
-        <div className="flex items-center space-x-2 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-xl border border-white/60 shadow-lg">
-          <Avatar className="h-6 w-6">
-            <AvatarFallback className="bg-gradient-to-r from-green-600 to-emerald-600 text-white text-xs">
-              {user?.username?.charAt(0).toUpperCase() || '?'}
-            </AvatarFallback>
-          </Avatar>
-          <div className="text-sm">
-            <div className="font-medium text-green-900">{user?.username}</div>
-            <div className="text-green-700 text-xs">{pets.length} pets collected</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Pet Info + Skills (Top Right, below header) */}
+      {/* Pet Info + Skills (Top Left, below header) */}
       {selectedPet && (
-        <div className="absolute top-14 sm:top-16 right-3 sm:right-4 z-20 flex flex-col space-y-2">
+        <div className="absolute top-18 left-3 z-20 flex flex-col space-y-2">
+           {/* Pet Action Buttons */}
+           <div className="flex flex-row items-start space-x-2 pb-2">
+            {/* Select Pet Button */}
+            <div
+              onClick={() => router.push("/select-pet")}
+              className="h-8 w-8 flex items-center justify-center text-white border-0 shadow-lg transition-all hover:scale-105 rounded-xl bg-violet-500 hover:bg-violet-600 p-0 cursor-pointer"
+            >
+              <PawPrint className="h-4 w-4" />
+            </div>
+
+            {/* Create Pet Button */}
+            <div
+              onClick={() => router.push("/create-pet")}
+              className="h-8 w-8 flex items-center justify-center text-white border-0 shadow-lg transition-all hover:scale-105 rounded-xl bg-violet-500 hover:bg-violet-600 p-0"
+            >
+              <Plus className="h-4 w-4" />
+            </div>
+          </div>
+
           {/* Pet Name and Rarity */}
-          <div className="flex items-center justify-end space-x-2 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-xl border border-white/60 shadow-lg">
-            <h2 className="text-sm font-bold text-green-900">{selectedPet.name}</h2>
-            <Badge className={cn("text-xs", getRarityBadgeColor(selectedPet.rarity))}>
-              {selectedPet.rarity}
-            </Badge>
+          <div className="flex items-center justify-end space-x-1 bg-white/70 backdrop-blur-sm p-1 rounded-sm border border-white/60 shadow-lg">
+            <div className="relative w-8 h-8 flex items-center justify-center">
+              {getRarityGem(selectedPet.rarity)}
+            </div>
+            <div className="text-sm font-bold text-green-900 min-w-[5ch] text-left">{selectedPet.name}</div>
           </div>
           
           {/* Skills */}
-          <div className="flex flex-col space-y-1">
+          <div className="flex flex-col space-y-1 w-full pt-2">
             {/* Health */}
-            <div className="flex items-center justify-end space-x-1 bg-red-100/95 backdrop-blur-sm px-2 py-1 rounded-lg border border-red-200/60 shadow-md">
-              <span className="text-xs font-bold text-red-700">{selectedPet.health}</span>
-              <Heart className="h-3 w-3 text-red-600" />
+            <div className="flex items-center justify-end space-x-2 bg-white/90 backdrop-blur-sm pr-2 rounded-full w-fit">
+              <div className="flex items-center justify-center rounded-full bg-red-100 p-1">
+                <Heart className="h-5 w-5 text-red-600" />
+              </div>
+              <span className="text-base font-bold text-red-700 w-[3ch] text-right">{selectedPet.health}</span>
             </div>
+
             {/* Strength */}
-            <div className="flex items-center justify-end space-x-1 bg-yellow-100/95 backdrop-blur-sm px-2 py-1 rounded-lg border border-yellow-200/60 shadow-md">
-              <span className="text-xs font-bold text-yellow-700">{selectedPet.strength}</span>
-              <Zap className="h-3 w-3 text-yellow-600" />
+            <div className="flex items-center justify-end space-x-2 bg-white/90 backdrop-blur-sm pr-2 rounded-full w-fit">
+              <div className="flex items-center justify-center rounded-full bg-yellow-100 p-1">
+                <Zap className="h-5 w-5 text-yellow-600" />
+              </div>
+              <span className="text-base font-bold text-yellow-700 w-[3ch] text-right">{selectedPet.strength}</span>
             </div>
+
             {/* Social */}
-            <div className="flex items-center justify-end space-x-1 bg-blue-100/95 backdrop-blur-sm px-2 py-1 rounded-lg border border-blue-200/60 shadow-md">
-              <span className="text-xs font-bold text-blue-700">{selectedPet.social}</span>
-              <Users className="h-3 w-3 text-blue-600" />
+            <div className="flex items-center justify-end space-x-2 bg-white/90 backdrop-blur-sm pr-2 rounded-full w-fit">
+              <div className="flex items-center justify-center rounded-full bg-blue-100 p-1">
+                <Users className="h-5 w-5 text-blue-600" />
+              </div>
+              <span className="text-base font-bold text-blue-700 w-[3ch] text-right">{selectedPet.social}</span>
             </div>
           </div>
         </div>
@@ -197,31 +226,52 @@ export default function HomePage() {
             alt={selectedPet.name}
             width={300}
             height={300}
-            className="w-80 h-80 sm:w-96 sm:h-96 lg:w-96 lg:h-96 object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-300"
+            className="w-96 h-96 object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-300"
             priority
           />
         </div>
       )}
 
-      {/* Action Buttons - Fixed at bottom */}
-      <div className="absolute bottom-4 left-0 right-0 z-20 px-3 sm:px-4">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 max-w-4xl mx-auto">
-          {actions.map((action) => (
-            <Button
-              key={action.title}
-              onClick={() => action.available && router.push(action.route)}
-              disabled={!action.available}
-              className={cn(
-                "h-8 sm:h-10 flex flex-row items-center justify-center space-y-0.5 text-white border-0 shadow-lg transition-all hover:scale-105 rounded-xl text-xs",
-                action.color,
-                !action.available && "opacity-50 cursor-not-allowed"
-              )}
-            >
-              <action.icon className="h-4 w-4 sm:h-5 sm:w-5" />
-              <span className="font-semibold">{action.title}</span>
-            </Button>
-          ))}
-        </div>
+      {/* Action Buttons - Individual positioning like game buttons */}
+      <div className="absolute bottom-0 left-0 right-0 z-20 px-3 sm:px-4">
+        {/* Add Data Button - Bottom Center */}
+        <Button
+          onClick={() => selectedPet && router.push("/add-data")}
+          disabled={!selectedPet}
+          className={cn(
+            "absolute bottom-12 left-1/2 transform -translate-x-1/2 w-28 h-10 flex flex-row items-center justify-center space-x-1 text-white border-0 shadow-lg transition-all hover:scale-105 rounded-xl text-base bg-violet-500 hover:bg-violet-600",
+            !selectedPet && "opacity-50 cursor-not-allowed"
+          )}
+        >
+          <Database className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span className="font-semibold">Add Data</span>
+        </Button>
+
+        {/* Insights Button - Bottom Right-Center */}
+        <Button
+          onClick={() => selectedPet && router.push("/data-insights")}
+          disabled={!selectedPet}
+          className={cn(
+            "absolute bottom-24 left-4 transform w-28 h-10 flex flex-row items-center justify-center space-x-1 text-white border-0 shadow-lg transition-all hover:scale-105 rounded-xl text-base bg-violet-500 hover:bg-violet-600",
+            !selectedPet && "opacity-50 cursor-not-allowed"
+          )}
+        >
+          <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span className="font-semibold">Insights</span>
+        </Button>
+
+        {/* Play Game Button - Bottom Right */}
+        <Button
+          onClick={() => selectedPet && router.push("/play-game")}
+          disabled={!selectedPet}
+          className={cn(
+            "absolute bottom-24 right-4 transform w-28 h-10 flex flex-row items-center justify-center space-x-1 text-white border-0 shadow-lg transition-all hover:scale-105 rounded-xl text-base bg-violet-500 hover:bg-violet-600",
+            !selectedPet && "opacity-50 cursor-not-allowed"
+          )}
+        >
+          <Gamepad2 className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span className="font-semibold">Claim</span>
+        </Button>
       </div>
     </main>
   );

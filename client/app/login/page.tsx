@@ -142,7 +142,7 @@ export default function LoginPage() {
     setAuthLoading(true);
     try {
       const timestamp = Date.now();
-      const walletAddress = `0x1234567890123456789012345678901234567890`;
+      const walletAddress = `0x1234567890123456789012345678901234567123`;
       const username = `TestNewUser_${timestamp}`;
       
       await login(walletAddress, username);
