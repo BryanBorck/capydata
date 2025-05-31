@@ -318,7 +318,7 @@ export default function DiscoverDrawer({ isOpen, onClose, onSourcesAdded }: Disc
               className="font-silkscreen text-sm font-bold text-gray-800 uppercase bg-yellow-200 border-2 border-yellow-600 shadow-[2px_2px_0_#ca8a04] px-4 py-2 hover:bg-yellow-100 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#ca8a04] transition-all flex items-center gap-2 flex-1"
             >
               <Lightbulb className="h-3 w-3" />
-              I'm feeling curious
+              {`I'm feeling curious`}
             </button>
             <button
               onClick={() => handleSearch(searchQuery)}
