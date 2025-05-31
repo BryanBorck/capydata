@@ -37,9 +37,12 @@ interface Pet {
   id: string;
   name: string;
   rarity: string;
-  health: number;
-  strength: number;
   social: number;
+  trivia: number;
+  science: number;
+  code: number;
+  trenches: number;
+  streak: number;
   created_at: string;
 }
 
@@ -54,28 +57,52 @@ interface Knowledge {
 
 const DATA_TYPES: DataType[] = [
   {
-    id: 'text',
-    title: 'Text Content',
-    description: 'Articles, notes, or written content',
-    icon: FileText,
+    id: 'social',
+    title: 'Social Content',
+    description: 'Twitter posts, social media content',
+    icon: Users,
     color: 'from-blue-500 to-cyan-500',
-    statBoost: '+2 Intelligence'
+    statBoost: '+3 Social, +1 Streak'
   },
   {
-    id: 'url',
-    title: 'Website URL',
-    description: 'Share interesting links and resources',
-    icon: Link,
-    color: 'from-green-500 to-emerald-500',
-    statBoost: '+1 Social, +1 Intelligence'
-  },
-  {
-    id: 'file',
-    title: 'File Upload',
-    description: 'Upload documents, images, or files',
-    icon: Upload,
+    id: 'trivia',
+    title: 'Trivia & Knowledge',
+    description: 'Fun facts, trivia questions, general knowledge',
+    icon: Brain,
     color: 'from-purple-500 to-pink-500',
-    statBoost: '+3 Intelligence'
+    statBoost: '+3 Trivia, +1 Streak'
+  },
+  {
+    id: 'science',
+    title: 'Science Papers',
+    description: 'arXiv papers, research documents, scientific content',
+    icon: Sparkles,
+    color: 'from-green-500 to-emerald-500',
+    statBoost: '+3 Science, +1 Streak'
+  },
+  {
+    id: 'code',
+    title: 'Code & Documentation',
+    description: 'GitHub repos, documentation, programming content',
+    icon: FileText,
+    color: 'from-orange-500 to-red-500',
+    statBoost: '+3 Code, +1 Streak'
+  },
+  {
+    id: 'trenches',
+    title: 'Crypto & Finance',
+    description: 'Crypto info, DeFi, blockchain, financial content',
+    icon: Zap,
+    color: 'from-yellow-500 to-amber-500',
+    statBoost: '+3 Trenches, +1 Streak'
+  },
+  {
+    id: 'general',
+    title: 'General Content',
+    description: 'Text, articles, or general written content',
+    icon: FileText,
+    color: 'from-gray-500 to-slate-500',
+    statBoost: '+2 Streak'
   }
 ];
 
@@ -169,9 +196,9 @@ export default function AddDataPage() {
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
-  const handleDataTypeSelect = (dataType: string) => {
+  const handleDataTypeSelect = (category: string) => {
     setShowDataTypeDialog(false);
-    router.push(`/add-data/${dataType}?petId=${activePet?.id}`);
+    router.push(`/add-data/entry?petId=${activePet?.id}&category=${category}`);
   };
 
   if (!isAuthenticated || pets.length === 0) {
@@ -289,40 +316,51 @@ export default function AddDataPage() {
                 <CardContent className="relative bg-white/95 backdrop-blur-sm space-y-4 p-6">
                   {/* Stats Grid */}
                   <div className="grid grid-cols-3 gap-3">
-                    <div className="text-center p-3 bg-red-50 rounded-lg border border-red-200">
-                      <Heart className="h-5 w-5 text-red-500 mx-auto mb-1" />
-                      <div className="font-bold text-lg text-red-600">{activePet.health}</div>
-                      <div className="text-xs text-gray-600 uppercase tracking-wide">Health</div>
-                      <Progress value={activePet.health} className="h-1 mt-1" />
-                    </div>
-                    
-                    <div className="text-center p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                      <Zap className="h-5 w-5 text-yellow-500 mx-auto mb-1" />
-                      <div className="font-bold text-lg text-yellow-600">{activePet.strength}</div>
-                      <div className="text-xs text-gray-600 uppercase tracking-wide">Strength</div>
-                      <Progress value={activePet.strength} className="h-1 mt-1" />
-                    </div>
-                    
                     <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
                       <Users className="h-5 w-5 text-blue-500 mx-auto mb-1" />
                       <div className="font-bold text-lg text-blue-600">{activePet.social}</div>
                       <div className="text-xs text-gray-600 uppercase tracking-wide">Social</div>
                       <Progress value={activePet.social} className="h-1 mt-1" />
                     </div>
+
+                    <div className="text-center p-3 bg-purple-50 rounded-lg border border-purple-200">
+                      <Brain className="h-5 w-5 text-purple-500 mx-auto mb-1" />
+                      <div className="font-bold text-lg text-purple-600">{activePet.trivia}</div>
+                      <div className="text-xs text-gray-600 uppercase tracking-wide">Trivia</div>
+                      <Progress value={activePet.trivia} className="h-1 mt-1" />
+                    </div>
+
+                    <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
+                      <Sparkles className="h-5 w-5 text-green-500 mx-auto mb-1" />
+                      <div className="font-bold text-lg text-green-600">{activePet.science}</div>
+                      <div className="text-xs text-gray-600 uppercase tracking-wide">Science</div>
+                      <Progress value={activePet.science} className="h-1 mt-1" />
+                    </div>
+
+                    <div className="text-center p-3 bg-orange-50 rounded-lg border border-orange-200">
+                      <FileText className="h-5 w-5 text-orange-500 mx-auto mb-1" />
+                      <div className="font-bold text-lg text-orange-600">{activePet.code}</div>
+                      <div className="text-xs text-gray-600 uppercase tracking-wide">Code</div>
+                      <Progress value={activePet.code} className="h-1 mt-1" />
+                    </div>
+
+                    <div className="text-center p-3 bg-amber-50 rounded-lg border border-amber-200">
+                      <Zap className="h-5 w-5 text-amber-500 mx-auto mb-1" />
+                      <div className="font-bold text-lg text-amber-600">{activePet.trenches}</div>
+                      <div className="text-xs text-gray-600 uppercase tracking-wide">Trenches</div>
+                      <Progress value={activePet.trenches} className="h-1 mt-1" />
+                    </div>
+
+                    <div className="text-center p-3 bg-red-50 rounded-lg border border-red-200">
+                      <CheckCircle className="h-5 w-5 text-red-500 mx-auto mb-1" />
+                      <div className="font-bold text-lg text-red-600">{activePet.streak}</div>
+                      <div className="text-xs text-gray-600 uppercase tracking-wide">Streak</div>
+                      <Progress value={activePet.streak} className="h-1 mt-1" />
+                    </div>
                   </div>
 
                   {/* Knowledge Count */}
-                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Brain className="h-5 w-5 text-purple-500" />
-                        <span className="font-semibold text-gray-900">Knowledge</span>
-                        <Badge variant="secondary" className="text-xs">
-                          {petKnowledge.length} sources
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
+
                 </CardContent>
               </Card>
             </div>

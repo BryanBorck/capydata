@@ -178,7 +178,7 @@ export default function SettingsPage() {
                   <div className="text-center bg-yellow-50 rounded-lg p-3 sm:p-4 border border-yellow-200 col-span-2 lg:col-span-1">
                     <Trophy className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-500 mx-auto mb-1 sm:mb-2" />
                     <div className="text-lg sm:text-xl font-bold text-yellow-600">
-                      {Math.floor(pets.reduce((sum, pet) => sum + pet.health + pet.strength + pet.social, 0) / pets.length) || 0}
+                      {Math.floor(pets.reduce((sum, pet) => sum + pet.social + pet.trivia + pet.science + pet.code + pet.trenches + pet.streak, 0) / pets.length) || 0}
                     </div>
                     <div className="text-xs sm:text-sm text-gray-600">Avg Total Stats</div>
                   </div>
@@ -220,12 +220,12 @@ export default function SettingsPage() {
                         
                         <div className="space-y-1">
                           <div className="flex justify-between text-xs">
-                            <span className="text-gray-600">Health:</span>
-                            <span className="font-medium">{pet.health}/100</span>
+                            <span className="text-gray-600">Trivia:</span>
+                            <span className="font-medium">{pet.trivia}/100</span>
                           </div>
                           <div className="flex justify-between text-xs">
-                            <span className="text-gray-600">Strength:</span>
-                            <span className="font-medium">{pet.strength}/100</span>
+                            <span className="text-gray-600">Streak:</span>
+                            <span className="font-medium">{pet.streak}/100</span>
                           </div>
                           <div className="flex justify-between text-xs">
                             <span className="text-gray-600">Social:</span>

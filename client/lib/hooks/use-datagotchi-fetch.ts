@@ -88,8 +88,9 @@ export const useDatagotchiFetch = (config?: DatagotchiFetchConfig) => {
               wallet_address
             )
           `)
-          .order('health', { ascending: false })
-          .order('strength', { ascending: false })
+          .order('streak', { ascending: false })
+          .order('trivia', { ascending: false })
+          .order('social', { ascending: false })
           .limit(limit);
 
         if (error) throw error;

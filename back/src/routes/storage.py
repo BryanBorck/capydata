@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, status, Depends, Query
 from pydantic import BaseModel, Field, HttpUrl
 from typing import Optional, List, Dict, Any
 import os
+from enum import Enum
 
 from src.services.storage.supabase import Supabase
 
@@ -20,11 +21,22 @@ def get_storage() -> Supabase:
     return get_storage._instance
 
 
+class DataCategory(str, Enum):
+    social = "social"
+    trivia = "trivia"
+    science = "science"
+    code = "code"
+    trenches = "trenches"
+    general = "general"
+
+
 class KnowledgeCreate(BaseModel):
     url: Optional[HttpUrl] = None
     content: Optional[str] = None
     title: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    category: DataCategory = DataCategory.general
+    tags: List[str] = Field(default_factory=list)
 
 
 class ImageCreate(BaseModel):
@@ -35,8 +47,10 @@ class ImageCreate(BaseModel):
 
 class DataInstanceCreate(BaseModel):
     content: str
-    content_type: str = Field(..., examples=["text", "markdown", "json"])
+    content_type: str = Field(..., examples=["text", "markdown", "json", "url", "file"])
     metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    category: DataCategory = DataCategory.general
+    tags: List[str] = Field(default_factory=list)
     knowledge_list: Optional[List[KnowledgeCreate]] = Field(None, description="List of knowledge objects to attach to this instance")
     image_urls: Optional[List[HttpUrl]] = Field(None, description="List of image URLs to attach to this instance")
 
@@ -47,6 +61,8 @@ class DataInstanceResponse(BaseModel):
     content: str
     content_type: str
     metadata: Optional[Dict[str, Any]] = None
+    category: str
+    tags: List[str]
     created_at: str
     knowledge: Optional[List[Dict[str, Any]]]
     images: Optional[List[Dict[str, Any]]]
@@ -60,9 +76,12 @@ class PetResponse(BaseModel):
     owner_wallet: str
     name: str
     rarity: str
-    health: int
-    strength: int
     social: int
+    trivia: int
+    science: int
+    code: int
+    trenches: int
+    streak: int
     created_at: str
 
     class Config:
@@ -109,7 +128,8 @@ async def create_datainstance(pet_id: str, payload: DataInstanceCreate, storage:
             knowledge_list = []
             for k in payload.knowledge_list:
                 knowledge_dict = k.model_dump()
-                knowledge_dict['url'] = str(knowledge_dict['url'])  # Convert HttpUrl to string
+                if knowledge_dict.get('url'):
+                    knowledge_dict['url'] = str(knowledge_dict['url'])  # Convert HttpUrl to string
                 knowledge_list.append(knowledge_dict)
         
         instance = storage.create_complete_datainstance(
@@ -119,6 +139,8 @@ async def create_datainstance(pet_id: str, payload: DataInstanceCreate, storage:
             knowledge_list=knowledge_list,
             image_urls=[str(url) for url in payload.image_urls] if payload.image_urls else None,
             metadata=payload.metadata,
+            category=payload.category.value,
+            tags=payload.tags,
         )
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))

@@ -45,8 +45,8 @@ export const PetListExample = ({ walletAddress }: { walletAddress: string }) => 
               <h3 className="font-semibold">{pet.name}</h3>
               <p className="text-sm text-muted-foreground">Rarity: {pet.rarity}</p>
               <div className="flex gap-4 mt-2">
-                <span>Health: {pet.health}</span>
-                <span>Strength: {pet.strength}</span>
+                <span>Trivia: {pet.trivia}</span>
+                <span>Streak: {pet.streak}</span>
                 <span>Social: {pet.social}</span>
               </div>
             </div>
@@ -78,7 +78,7 @@ export const PetUpdaterExample = ({ petId }: { petId: string }) => {
     
     try {
       await updatePetStats(petId, {
-        health: Math.min(100, pet.health + 10)
+        trivia: Math.min(100, pet.trivia + 10)
       });
       // Refresh pet data
       await fetchPetById(petId);
@@ -94,8 +94,8 @@ export const PetUpdaterExample = ({ petId }: { petId: string }) => {
           <div className="p-6 border rounded-lg">
             <h2 className="text-xl font-bold mb-4">{pet.name}</h2>
             <div className="space-y-2 mb-4">
-              <div>Health: {pet.health}/100</div>
-              <div>Strength: {pet.strength}/100</div>
+              <div>Trivia: {pet.trivia}/100</div>
+              <div>Streak: {pet.streak}/100</div>
               <div>Social: {pet.social}/100</div>
             </div>
             <button
@@ -103,7 +103,7 @@ export const PetUpdaterExample = ({ petId }: { petId: string }) => {
               disabled={loading}
               className="px-4 py-2 bg-primary text-primary-foreground rounded-md disabled:opacity-50"
             >
-              {loading ? 'Feeding...' : 'Feed Pet (+10 Health)'}
+              {loading ? 'Feeding...' : 'Feed Pet (+10 Trivia)'}
             </button>
           </div>
         )}
@@ -131,7 +131,7 @@ export const LeaderboardExample = () => {
               <span className="text-muted-foreground">
                 {pet.profiles?.username || 'Unknown'}
               </span>
-              <span>💪 {pet.strength}</span>
+              <span>🔥 {pet.streak}</span>
             </div>
           ))}
         </div>

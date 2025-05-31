@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Database, Gamepad2, Settings, Heart, Zap, Users, PawPrint, BarChart3 } from "lucide-react";
+import { Plus, Database, Gamepad2, Settings, Heart, Zap, Users, PawPrint, BarChart3, Brain, CheckCircle, Code, SearchCheck } from "lucide-react";
 import { AnimatedShinyText } from "@/components/magicui/animated-shiny-text";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -211,28 +211,52 @@ export default function HomePage() {
           
           {/* Skills */}
           <div className="flex flex-col space-y-1 w-full pt-2">
-            {/* Health */}
-            <div className="flex items-center justify-end space-x-2 bg-white/90 backdrop-blur-sm pr-2 rounded-full w-fit">
-              <div className="flex items-center justify-center rounded-full bg-red-100 p-1">
-                <Heart className="h-5 w-5 text-red-600" />
-              </div>
-              <span className="text-base font-bold text-red-700 w-[3ch] text-right">{selectedPet.health}</span>
-            </div>
-
-            {/* Strength */}
-            <div className="flex items-center justify-end space-x-2 bg-white/90 backdrop-blur-sm pr-2 rounded-full w-fit">
-              <div className="flex items-center justify-center rounded-full bg-yellow-100 p-1">
-                <Zap className="h-5 w-5 text-yellow-600" />
-              </div>
-              <span className="text-base font-bold text-yellow-700 w-[3ch] text-right">{selectedPet.strength}</span>
-            </div>
-
             {/* Social */}
             <div className="flex items-center justify-end space-x-2 bg-white/90 backdrop-blur-sm pr-2 rounded-full w-fit">
               <div className="flex items-center justify-center rounded-full bg-blue-100 p-1">
                 <Users className="h-5 w-5 text-blue-600" />
               </div>
               <span className="text-base font-bold text-blue-700 w-[3ch] text-right">{selectedPet.social}</span>
+            </div>
+
+            {/* Trivia */}
+            <div className="flex items-center justify-end space-x-2 bg-white/90 backdrop-blur-sm pr-2 rounded-full w-fit">
+              <div className="flex items-center justify-center rounded-full bg-purple-100 p-1">
+                <Brain className="h-5 w-5 text-purple-600" />
+              </div>
+              <span className="text-base font-bold text-purple-700 w-[3ch] text-right">{selectedPet.trivia}</span>
+            </div>
+
+            {/* Science */}
+            <div className="flex items-center justify-end space-x-2 bg-white/90 backdrop-blur-sm pr-2 rounded-full w-fit">
+              <div className="flex items-center justify-center rounded-full bg-green-100 p-1">
+                <Zap className="h-5 w-5 text-green-600" />
+              </div>
+              <span className="text-base font-bold text-green-700 w-[3ch] text-right">{selectedPet.science}</span>
+            </div>
+
+            {/* Code */}
+            <div className="flex items-center justify-end space-x-2 bg-white/90 backdrop-blur-sm pr-2 rounded-full w-fit">
+              <div className="flex items-center justify-center rounded-full bg-indigo-100 p-1">
+                <Code className="h-5 w-5 text-indigo-600" />
+              </div>
+              <span className="text-base font-bold text-indigo-700 w-[3ch] text-right">{selectedPet.code}</span>
+            </div>
+
+            {/* Trenches */}
+            <div className="flex items-center justify-end space-x-2 bg-white/90 backdrop-blur-sm pr-2 rounded-full w-fit">
+              <div className="flex items-center justify-center rounded-full bg-orange-100 p-1">
+                <SearchCheck className="h-5 w-5 text-orange-600" />
+              </div>
+              <span className="text-base font-bold text-orange-700 w-[3ch] text-right">{selectedPet.trenches}</span>
+            </div>
+
+            {/* Streak */}
+            <div className="flex items-center justify-end space-x-2 bg-white/90 backdrop-blur-sm pr-2 rounded-full w-fit">
+              <div className="flex items-center justify-center rounded-full bg-red-100 p-1">
+                <Zap className="h-5 w-5 text-red-600" />
+              </div>
+              <span className="text-base font-bold text-red-700 w-[3ch] text-right">{selectedPet.streak}</span>
             </div>
           </div>
         </div>

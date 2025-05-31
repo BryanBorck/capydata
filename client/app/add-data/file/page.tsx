@@ -20,9 +20,12 @@ interface Pet {
   id: string;
   name: string;
   rarity: string;
-  health: number;
-  strength: number;
   social: number;
+  trivia: number;
+  science: number;
+  code: number;
+  trenches: number;
+  streak: number;
   created_at: string;
 }
 

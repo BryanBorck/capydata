@@ -27,10 +27,29 @@ export async function getPetById(petId: string) {
   return data
 }
 
-export async function createPet(pet: PetInsert) {
+export async function createPet(walletAddress: string, name: string, rarity: string = 'common') {
+  const stats = getRarityStats(rarity)
+  
+  const social = 0
+  const trivia = 0
+  const science = 0
+  const code = 0
+  const trenches = 0
+  const streak = 0 // Start with 0 streak
+
   const { data, error } = await supabase
     .from('pets')
-    .insert(pet)
+    .insert({
+      owner_wallet: walletAddress,
+      name,
+      rarity,
+      social,
+      trivia,
+      science,
+      code,
+      trenches,
+      streak
+    })
     .select()
     .single()
 
@@ -59,20 +78,30 @@ export async function deletePet(petId: string) {
   if (error) throw error
 }
 
-export async function updatePetStats(petId: string, deltaHealth: number, deltaStrength: number, deltaSocial: number) {
+export async function updatePetStats(petId: string, deltaSocial: number, deltaStreak: number = 0) {
   // First get current stats
   const currentPet = await getPetById(petId)
   
   // Calculate new stats (ensure they don't go below 0)
-  const newHealth = Math.max(0, currentPet.health + deltaHealth)
-  const newStrength = Math.max(0, currentPet.strength + deltaStrength)
   const newSocial = Math.max(0, currentPet.social + deltaSocial)
+  const newStreak = Math.max(0, currentPet.streak + deltaStreak)
 
   return updatePet(petId, {
-    health: newHealth,
-    strength: newStrength,
-    social: newSocial
+    social: newSocial,
+    streak: newStreak
   })
+}
+
+// Helper to get rarity-based stats
+function getRarityStats(rarity: string) {
+  const baseStats = {
+    common: { min: 5, max: 15 },
+    rare: { min: 10, max: 25 },
+    epic: { min: 20, max: 35 },
+    legendary: { min: 30, max: 50 }
+  }
+  
+  return baseStats[rarity as keyof typeof baseStats] || baseStats.common
 }
 
 // Helper to create a pet with random stats
@@ -93,25 +122,5 @@ export async function createRandomPet(walletAddress: string, name?: string) {
     }
   }
 
-  // Generate random stats based on rarity
-  const baseStats = {
-    common: { min: 5, max: 15 },
-    rare: { min: 10, max: 25 },
-    epic: { min: 20, max: 35 },
-    legendary: { min: 30, max: 50 }
-  }
-
-  const stats = baseStats[rarity]
-  const health = Math.floor(Math.random() * (stats.max - stats.min + 1)) + stats.min
-  const strength = Math.floor(Math.random() * (stats.max - stats.min + 1)) + stats.min
-  const social = Math.floor(Math.random() * (stats.max - stats.min + 1)) + stats.min
-
-  return createPet({
-    owner_wallet: walletAddress,
-    name: name || 'Gotchi',
-    rarity,
-    health,
-    strength,
-    social
-  })
+  return createPet(walletAddress, name || 'Gotchi', rarity)
 } 

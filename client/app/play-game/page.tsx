@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Image, BookOpen, MessageSquare, Tag, Star, Heart, Zap, Users, Trophy, Play, RefreshCw, Check, X, ThumbsUp, ThumbsDown, Camera, Globe } from "lucide-react";
+import { ArrowLeft, Image, BookOpen, MessageSquare, Tag, Star, Heart, Zap, Users, Trophy, Play, RefreshCw, Check, X, ThumbsUp, ThumbsDown, Camera, Globe, Brain, CheckCircle } from "lucide-react";
 import { AnimatedShinyText } from "@/components/magicui/animated-shiny-text";
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 import { Button } from "@/components/ui/button";
@@ -792,15 +792,15 @@ export default function PlayGamePage() {
                   {selectedPet.name}'s Current Stats
                 </h3>
                 <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
-                  <div className="bg-red-50 rounded-lg p-3 sm:p-4 border border-red-200">
-                    <Heart className="h-5 w-5 sm:h-6 sm:w-6 text-red-500 mx-auto mb-1 sm:mb-2" />
-                    <div className="text-lg sm:text-xl font-bold text-red-600">{selectedPet.health}</div>
-                    <div className="text-xs sm:text-sm text-gray-600">Health</div>
+                  <div className="bg-purple-50 rounded-lg p-3 sm:p-4 border border-purple-200">
+                    <Brain className="h-5 w-5 sm:h-6 sm:w-6 text-purple-500 mx-auto mb-1 sm:mb-2" />
+                    <div className="text-lg sm:text-xl font-bold text-purple-600">{selectedPet.trivia}</div>
+                    <div className="text-xs sm:text-sm text-gray-600">Trivia</div>
                   </div>
-                  <div className="bg-yellow-50 rounded-lg p-3 sm:p-4 border border-yellow-200">
-                    <Zap className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-500 mx-auto mb-1 sm:mb-2" />
-                    <div className="text-lg sm:text-xl font-bold text-yellow-600">{selectedPet.strength}</div>
-                    <div className="text-xs sm:text-sm text-gray-600">Strength</div>
+                  <div className="bg-red-50 rounded-lg p-3 sm:p-4 border border-red-200">
+                    <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-red-500 mx-auto mb-1 sm:mb-2" />
+                    <div className="text-lg sm:text-xl font-bold text-red-600">{selectedPet.streak}</div>
+                    <div className="text-xs sm:text-sm text-gray-600">Streak</div>
                   </div>
                   <div className="bg-blue-50 rounded-lg p-3 sm:p-4 border border-blue-200">
                     <Users className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500 mx-auto mb-1 sm:mb-2" />
