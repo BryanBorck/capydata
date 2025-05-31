@@ -24,6 +24,7 @@ export default function ChatPanel({
   onSendMessage
 }: ChatPanelProps) {
   const chatMessagesRef = useRef<HTMLDivElement>(null);
+  const chatSectionRef = useRef<HTMLDivElement>(null);
 
   const suggestedQuestions = [
     "What are the main topics covered in these sources?",
@@ -33,82 +34,88 @@ export default function ChatPanel({
     "What practical applications can be derived from this information?"
   ];
 
-  // Auto-scroll to bottom when messages change
+  const userMessages = chatMessages.filter(m => m.role === 'user');
+  const hasUserMessages = userMessages.length > 0;
+
+  // Auto-scroll behavior
   useEffect(() => {
     if (chatMessagesRef.current) {
-      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+      if (hasUserMessages && chatSectionRef.current) {
+        // If there are user messages, scroll to the chat section
+        chatSectionRef.current.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        // Otherwise scroll to bottom for new messages
+        chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+      }
     }
-  }, [chatMessages, isGenerating]);
+  }, [chatMessages, isGenerating, hasUserMessages]);
 
   const copyMessage = (content: string) => {
     navigator.clipboard.writeText(content);
   };
 
   return (
-    <div className="h-full flex flex-col px-6 py-6 pb-16">
-      {/* Knowledge Header - Only show when no user messages */}
-      {chatMessages.filter(m => m.role === 'user').length === 0 && (
-        <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-6 mb-6">
-          <div className="flex flex-col items-start space-x-4">
-            <div className="w-12 h-12 bg-blue-100 border-2 border-blue-600 shadow-[2px_2px_0_#1e40af] flex items-center justify-center flex-shrink-0">
-              {isLoadingSummary ? (
-                <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-              ) : (
-                <div className="text-4xl">{knowledgeSummary?.icon || '📚'}</div>
-              )}
-            </div>
-            <div className="flex-1">
-              {isLoadingSummary ? (
-                <div className="space-y-3">
-                  <div className="h-6 bg-gray-200 border-2 border-gray-400 animate-pulse"></div>
-                  <div className="h-4 bg-gray-200 border-2 border-gray-400 w-32 animate-pulse"></div>
-                  <div className="space-y-2">
-                    <div className="h-4 bg-gray-200 border-2 border-gray-400 animate-pulse"></div>
-                    <div className="h-4 bg-gray-200 border-2 border-gray-400 w-3/4 animate-pulse"></div>
-                  </div>
-                </div>
-              ) : knowledgeSummary ? (
-                <>
-                  <h1 className="font-silkscreen text-lg font-bold text-gray-800 uppercase mb-2">
-                    {knowledgeSummary.title}
-                  </h1>
-                  <p className="font-silkscreen text-xs text-gray-600 leading-relaxed mb-4 uppercase">
-                    {knowledgeSummary.summary}
-                  </p>
-                  <div className="flex items-center space-x-3">
-                    <button 
-                      onClick={() => copyMessage(knowledgeSummary.summary)}
-                      className="font-silkscreen text-xs font-bold text-gray-800 uppercase bg-gray-100 border-2 border-gray-600 shadow-[2px_2px_0_#374151] px-3 py-1 hover:bg-gray-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151] transition-all"
-                    >
-                      <Copy className="h-3 w-3" />
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <h1 className="font-silkscreen text-lg font-bold text-gray-800 uppercase mb-2">
-                    NO KNOWLEDGE SOURCES
-                  </h1>
-                  <p className="font-silkscreen text-xs text-gray-600 mb-4 uppercase">0 SOURCES</p>
-                  <p className="font-silkscreen text-xs text-gray-600 leading-relaxed uppercase">
-                    ADD SOME KNOWLEDGE SOURCES TO START EXPLORING YOUR DATA.
-                  </p>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Chat Messages */}
-      <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] flex-1 flex flex-col overflow-hidden">
-        <div className="p-4 border-b-2 border-gray-600 bg-gray-100">
-          <div className="font-silkscreen text-sm font-bold text-gray-800 uppercase">
-            CHAT WITH YOUR DATA
-          </div>
-        </div>
+    <div className="h-full flex flex-col px-6 py-6 pb-16 relative">
+      {/* Single Card Container */}
+      <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] flex-1 flex flex-col overflow-hidden relative">
         
-        <div className="flex-1 overflow-y-auto p-4 pb-32" ref={chatMessagesRef}>
+        {/* Scrollable Content Area */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4" ref={chatMessagesRef} style={{ paddingBottom: '140px' }}>
+          {/* Knowledge Header - Always show */}
+          <div className="bg-gray-50 border-2 border-gray-300 shadow-[4px_4px_0_#d1d5db] p-4 mb-6">
+            <div className="flex flex-col items-start space-y-3">
+              <div className="w-12 h-12 bg-blue-100 border-2 border-blue-600 shadow-[2px_2px_0_#1e40af] flex items-center justify-center flex-shrink-0">
+                {isLoadingSummary ? (
+                  <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                ) : (
+                  <div className="text-4xl">{knowledgeSummary?.icon || '📚'}</div>
+                )}
+              </div>
+              <div className="flex-1 w-full">
+                {isLoadingSummary ? (
+                  <div className="space-y-3">
+                    <div className="h-6 bg-gray-200 border-2 border-gray-400 animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 border-2 border-gray-400 w-32 animate-pulse"></div>
+                    <div className="space-y-2">
+                      <div className="h-4 bg-gray-200 border-2 border-gray-400 animate-pulse"></div>
+                      <div className="h-4 bg-gray-200 border-2 border-gray-400 w-3/4 animate-pulse"></div>
+                    </div>
+                  </div>
+                ) : knowledgeSummary ? (
+                  <>
+                    <h1 className="font-silkscreen text-lg font-bold text-gray-800 uppercase mb-2">
+                      {knowledgeSummary.title}
+                    </h1>
+                    <p className="font-silkscreen text-xs text-gray-600 leading-relaxed mb-4 uppercase">
+                      {knowledgeSummary.summary}
+                    </p>
+                    <div className="flex items-center space-x-3">
+                      <button 
+                        onClick={() => copyMessage(knowledgeSummary.summary)}
+                        className="font-silkscreen text-xs font-bold text-gray-800 uppercase bg-gray-100 border-2 border-gray-600 shadow-[2px_2px_0_#374151] px-3 py-1 hover:bg-gray-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151] transition-all"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h1 className="font-silkscreen text-lg font-bold text-gray-800 uppercase mb-2">
+                      NO KNOWLEDGE SOURCES
+                    </h1>
+                    <p className="font-silkscreen text-xs text-gray-600 mb-4 uppercase">0 SOURCES</p>
+                    <p className="font-silkscreen text-xs text-gray-600 leading-relaxed uppercase">
+                      ADD SOME KNOWLEDGE SOURCES TO START EXPLORING YOUR DATA.
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Chat Messages Section */}
+          
+          {/* Chat Messages */}
           <div className="space-y-4">
             {chatMessages.filter(m => m.id !== 'welcome').map((message) => (
               <div key={message.id} className="space-y-3">
@@ -141,8 +148,8 @@ export default function ChatPanel({
           </div>
         </div>
 
-        {/* Fixed Chat Input Area at Bottom */}
-        <div className="border-t-2 border-gray-600 bg-gray-50 p-4">
+        {/* Sticky Input Area at Bottom */}
+        <div className="absolute bottom-0 left-0 right-0 border-t-2 border-gray-600 bg-gray-50 p-4">
           <div className="space-y-3">
             <div className="flex space-x-2">
               <input
