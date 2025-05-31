@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Plus, Search, FileText, Check } from "lucide-react";
+import { FaTwitter, FaLinkedin, FaExternalLinkAlt, FaFileAlt } from "react-icons/fa";
 import { cn } from "@/lib/utils";
 import { Knowledge } from "../types";
 import AddDataDrawer from "./AddDataDrawer";
@@ -13,6 +14,38 @@ interface SourcesPanelProps {
   onToggleSelectAll: () => void;
   onDataAdded?: () => void;
 }
+
+// Function to determine icon based on knowledge source
+const getKnowledgeIcon = (knowledge: Knowledge): React.ReactNode => {
+  const url = knowledge.url?.toLowerCase();
+  
+  if (url) {
+    // X/Twitter links
+    if (url.includes('x.com') || url.includes('twitter.com')) {
+      return <FaTwitter className="h-4 w-4 text-white" />;
+    }
+    
+    // LinkedIn links
+    if (url.includes('linkedin.com')) {
+      return <FaLinkedin className="h-4 w-4 text-white" />;
+    }
+    
+    // Documentation/docs links
+    if (url.includes('docs.') || url.includes('/docs/') || url.includes('documentation') || 
+        (url.includes('github.com') && url.includes('/wiki'))) {
+      return <FaFileAlt className="h-4 w-4 text-white" />;
+    }
+    
+    // General web links
+    return <FaExternalLinkAlt className="h-4 w-4 text-white" />;
+  }
+  
+  // For general text content without URL, use random emojis
+  const emojis = ['📝', '💭', '📋', '🗒️', '📄', '✍️', '🧠', '💡', '📚', '🎯'];
+  const emojiIndex = Math.abs(knowledge.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) % emojis.length;
+  
+  return <span className="text-sm">{emojis[emojiIndex]}</span>;
+};
 
 export default function SourcesPanel({
   petKnowledge,
@@ -99,8 +132,8 @@ export default function SourcesPanel({
                 </button>
                 
                 <div className="flex items-center space-x-3 flex-1 min-w-0">
-                  <div className="w-8 h-8 bg-red-600 border-2 border-red-800 shadow-[2px_2px_0_#7f1d1d] flex items-center justify-center flex-shrink-0">
-                    <FileText className="h-4 w-4 text-white" />
+                  <div className="w-8 h-8 bg-gray-800 border-2 border-gray-800 shadow-[2px_2px_0_#7f1d1d] flex items-center justify-center flex-shrink-0">
+                    {getKnowledgeIcon(knowledge)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-silkscreen text-xs font-bold text-gray-800 uppercase truncate">
@@ -124,4 +157,4 @@ export default function SourcesPanel({
       />
     </div>
   );
-} 
+}
