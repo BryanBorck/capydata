@@ -22,8 +22,8 @@ class DataInstance:
 @dataclass
 class Knowledge:
     """Represents knowledge (URL-content) that can be associated with data instances."""
-    url: str
-    content: str
+    url: Optional[str] = None
+    content: Optional[str] = None
     title: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
     created_at: Optional[datetime] = None
@@ -33,6 +33,10 @@ class Knowledge:
             self.created_at = datetime.now()
         if self.metadata is None:
             self.metadata = {}
+        
+        # Validate that we have either URL or content
+        if not self.url and (not self.content or self.content.strip() == ""):
+            raise ValueError("Knowledge must have either a URL or content")
 
 
 @dataclass
