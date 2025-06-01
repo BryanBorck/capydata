@@ -8,10 +8,11 @@ class NotteScraper:
 
     def _normalize_url(self, url: str) -> str:
         parsed = urlparse(url)
-        if parsed.netloc in {"x.com", "www.x.com"}:
-            # Convert to twitter.com since x.com might block unauthenticated scraping
-            parsed = parsed._replace(netloc="twitter.com")
-        return urlunparse(parsed)
+        # if parsed.netloc in {"x.com", "www.x.com"}:
+        #     # Convert to twitter.com since x.com might block unauthenticated scraping
+        #     parsed = parsed._replace(netloc="twitter.com")
+        # return urlunparse(parsed)
+        return url
 
     def scrape(self, url: str, instruction: str):
         normalized = self._normalize_url(url)

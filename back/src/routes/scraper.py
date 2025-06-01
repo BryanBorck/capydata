@@ -23,7 +23,7 @@ async def scrape_endpoint(payload: ScrapeRequest):
     """Scrape a webpage using Notte and return the structured data."""
 
     try:
-        result = scraper_service.scrape(url=str(payload.url), instruction=payload.instruction)
+        result = scraper_service.scrape(url=str(payload.url), instruction="Extract the text from the url above")
     except Exception as exc: 
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
