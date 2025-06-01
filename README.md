@@ -3,8 +3,7 @@
 <div align="center">
   <img src="client/public/capybara/variants/default-capybara.png" alt="CapyData Capybara" width="200"/>
 
-    [![World Mini App](https://img.shields.io/badge/World-Mini%20App-8B5CF6)](https://worldcoin.org/)
-
+[![World Mini App](https://img.shields.io/badge/World-Mini%20App-8B5CF6)](https://worldcoin.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-15-000000)](https://nextjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.111.0-009688)](https://fastapi.tiangolo.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
