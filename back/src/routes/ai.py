@@ -6,6 +6,7 @@ from openai import OpenAI
 import json
 from datetime import datetime, timezone
 import random
+import time
 
 from src.services.storage.supabase import Supabase
 
@@ -1193,80 +1194,6 @@ async def get_user_progress(wallet_address: str, language: str, storage: Supabas
     return result.data[0] if result.data else None
 
 
-async def get_learned_words(wallet_address: str, language: str, storage: Supabase, mastery_threshold: int = 80) -> List[str]:
-    """Get words the user has already mastered"""
-    result = storage.client.table("learned_words").select("word").eq(
-        "wallet_address", wallet_address
-    ).eq(
-        "language", language
-    ).gte(
-        "mastery_level", mastery_threshold
-    ).execute()
-    
-    return [row['word'] for row in result.data]
-
-
-async def get_recently_shown_words(wallet_address: str, language: str, storage: Supabase, last_sessions: int = 5) -> List[str]:
-    """Get words shown in recent sessions"""
-    result = storage.client.table("flashcard_sessions").select("session_data").eq(
-        "wallet_address", wallet_address
-    ).eq(
-        "language", language
-    ).order("completed_at", desc=True).limit(last_sessions).execute()
-    
-    shown_words = []
-    for session in result.data:
-        try:
-            if session.get('session_data'):
-                # Parse session_data which contains the flashcards and answers
-                import json
-                if isinstance(session['session_data'], str):
-                    session_data = json.loads(session['session_data'])
-                else:
-                    session_data = session['session_data']
-                
-                # Extract words from flashcards in session_data
-                if 'flashcards' in session_data:
-                    for card in session_data['flashcards']:
-                        if 'word' in card:
-                            shown_words.append(card['word'])
-        except (json.JSONDecodeError, KeyError, TypeError) as e:
-            print(f"Error parsing session data: {e}")
-            continue
-    
-    # Remove duplicates and return
-    return list(set(shown_words))
-
-
-async def create_or_update_progress(wallet_address: str, language: str, storage: Supabase) -> dict:
-    """Create or get existing progress for user-language combination"""
-    # Try to get existing progress
-    progress = await get_user_progress(wallet_address, language, storage)
-    
-    if not progress:
-        # Create new progress entry
-        new_progress = {
-            'wallet_address': wallet_address,
-            'language': language,
-            'level': 1,
-            'experience_points': 0,
-            'current_difficulty': 'beginner',
-            'total_words_learned': 0,
-            'total_sessions_completed': 0,
-            'current_streak': 0,
-            'best_streak': 0,
-            'accuracy_rate': 0.0,
-            'last_played': datetime.now(timezone.utc).isoformat(),
-            'created_at': datetime.now(timezone.utc).isoformat(),
-            'updated_at': datetime.now(timezone.utc).isoformat()
-        }
-        
-        result = storage.client.table("language_progress").insert(new_progress).execute()
-        progress = result.data[0]
-    
-    return progress
-
-
 def create_fallback_flashcards(language: str, count: int = 5) -> List[Flashcard]:
     """Create fallback flashcards when AI generation fails"""
     fallback_cards = {
@@ -1982,3 +1909,562 @@ Return valid JSON only, no additional text."""
             questions=trivia_questions,
             tokens_used=None
         )
+
+
+# ==== IMAGE QUALITY EVALUATION GAME ====
+
+class ImageQualityRoundRequest(BaseModel):
+    round_number: int
+    wallet_address: str
+    pet_id: Optional[str] = None
+
+
+class ImageData(BaseModel):
+    url: str
+    prompt: str
+    generation_params: dict
+    metadata: Optional[dict] = None
+
+
+class ImageQualityRound(BaseModel):
+    round_number: int
+    prompt: str
+    images: List[ImageData]
+    created_by: Optional[str] = None
+
+
+class ImageQualityRoundResponse(BaseModel):
+    round: ImageQualityRound
+    is_first_player: bool
+    tokens_used: Optional[int] = None
+
+
+class ImageQualityEvaluation(BaseModel):
+    round_number: int
+    selected_image_index: int
+    selected_image_url: str
+    reasoning: Optional[str] = None
+    time_taken: int  # seconds
+
+
+class ImageQualitySessionRequest(BaseModel):
+    wallet_address: str
+    pet_id: str
+    evaluations_data: List[dict]  # User's image selections and reasoning
+    rounds_data: List[dict]  # The rounds that were played
+    total_score: int
+    duration_seconds: int
+
+
+class ImageQualitySessionResponse(BaseModel):
+    session_id: str
+    rounds_completed: int
+    high_quality_images_added: int
+    pet_knowledge_updated: bool
+
+
+def generate_image_prompts_for_round(round_number: int, openai_client: OpenAI) -> str:
+    """Generate a single high-quality image prompt for a specific round."""
+    try:
+        # Define prompt themes based on round number
+        themes = [
+            "nature and landscapes",
+            "animals and wildlife", 
+            "architecture and buildings",
+            "food and cooking",
+            "art and creativity",
+            "technology and science",
+            "people and portraits",
+            "abstract and artistic",
+            "vehicles and transportation",
+            "space and astronomy"
+        ]
+        
+        theme = themes[round_number % len(themes)]
+        
+        system_prompt = """You are an expert at creating detailed image generation prompts that will produce high-quality, specific images when generated by AI models. 
+
+Create 1 detailed, specific prompt related to the given theme. The prompt should:
+1. Be highly descriptive and specific (15-25 words)
+2. Include details about lighting, composition, and style
+3. Be suitable for testing different AI generation parameters
+4. Create visually interesting and complex scenes
+
+Return ONLY the prompt text, nothing else."""
+
+        user_prompt = f"""Create 1 detailed image generation prompt for the theme: "{theme}"
+
+The prompt should describe a specific, visually rich scene that would benefit from high-quality image generation.
+
+Example format: "A majestic mountain landscape at golden hour with dramatic clouds, ancient pine trees, and crystal clear alpine lake reflecting the peaks"
+
+Theme: {theme}"""
+
+        response = openai_client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            max_tokens=150,
+            temperature=0.7
+        )
+        
+        # Return the generated prompt
+        prompt = response.choices[0].message.content.strip()
+        return prompt
+            
+    except Exception as e:
+        print(f"Error generating image prompt: {e}")
+        # Fallback prompt if AI generation fails
+        fallback_prompts = [
+            "A beautiful landscape with mountains and trees during golden hour",
+            "A colorful abstract painting with geometric shapes and vibrant colors",
+            "A cute animal in its natural habitat with soft natural lighting",
+            "Modern architecture with interesting lighting and dramatic shadows",
+            "A delicious gourmet meal with artistic presentation and warm lighting",
+            "Futuristic technology device with sleek design and neon accents",
+            "Portrait of a person with dramatic lighting and artistic composition",
+            "Abstract art with flowing colors and dynamic composition",
+            "Vintage vehicle in a scenic location with atmospheric lighting",
+            "Cosmic space scene with stars, nebulae, and celestial bodies"
+        ]
+        return fallback_prompts[round_number % len(fallback_prompts)]
+
+
+def generate_image_variations_with_parameters(base_prompt: str, round_number: int, openai_client: OpenAI) -> List[ImageData]:
+    """Generate multiple image variations from the same prompt using different generation parameters."""
+    
+    # Define different parameter sets that would affect image quality and style
+    parameter_sets = [
+        {
+            "name": "Standard Quality",
+            "prompt_enhancement": "",
+            "style": "photographic",
+            "quality": "standard",
+            "size": "1024x1024"
+        },
+        {
+            "name": "High Detail",
+            "prompt_enhancement": ", highly detailed, professional photography, sharp focus",
+            "style": "vivid",
+            "quality": "hd", 
+            "size": "1024x1024"
+        },
+        {
+            "name": "Artistic Style",
+            "prompt_enhancement": ", artistic style, creative composition, beautiful lighting",
+            "style": "vivid",
+            "quality": "standard",
+            "size": "1024x1024"
+        },
+        {
+            "name": "Ultra Quality",
+            "prompt_enhancement": ", ultra-high quality, masterpiece, 8k resolution, perfect details",
+            "style": "vivid",
+            "quality": "hd",
+            "size": "1024x1024"
+        }
+    ]
+    
+    generated_images = []
+    
+    for i, params in enumerate(parameter_sets):
+        try:
+            # Create enhanced prompt for this variation
+            enhanced_prompt = f"{base_prompt}{params['prompt_enhancement']}"
+            
+            # Generate image using OpenAI DALL-E
+            response = openai_client.images.generate(
+                model="dall-e-3",
+                prompt=enhanced_prompt,
+                size=params["size"],
+                quality=params["quality"],
+                style=params["style"],
+                n=1
+            )
+            
+            # Get the generated image URL
+            image_url = response.data[0].url
+            
+            image_data = ImageData(
+                url=image_url,
+                prompt=enhanced_prompt,
+                generation_params={
+                    "model": "dall-e-3",
+                    "original_prompt": base_prompt,
+                    "enhanced_prompt": enhanced_prompt,
+                    "style": params["style"],
+                    "quality": params["quality"],
+                    "size": params["size"],
+                    "parameter_set_name": params["name"],
+                    "revision_prompt": response.data[0].revised_prompt if hasattr(response.data[0], 'revised_prompt') else None
+                },
+                metadata={
+                    "generated_at": datetime.now(timezone.utc).isoformat(),
+                    "round_number": round_number,
+                    "variation_index": i,
+                    "base_prompt": base_prompt,
+                    "parameter_description": f"{params['name']} - {params['quality']} quality, {params['style']} style"
+                }
+            )
+            generated_images.append(image_data)
+            
+            # Small delay to avoid hitting rate limits
+            time.sleep(0.5)
+            
+        except Exception as e:
+            print(f"Error generating image variation {i}: {e}")
+            # Fallback to a placeholder if generation fails
+            fallback_image = ImageData(
+                url=f"https://picsum.photos/1024/1024?random={round_number}{i}",
+                prompt=f"{base_prompt} (fallback)",
+                generation_params={
+                    "model": "fallback",
+                    "parameter_set_name": params["name"],
+                    "error": str(e)
+                },
+                metadata={
+                    "generated_at": datetime.now(timezone.utc).isoformat(),
+                    "round_number": round_number,
+                    "variation_index": i,
+                    "base_prompt": base_prompt,
+                    "is_fallback": True
+                }
+            )
+            generated_images.append(fallback_image)
+    
+    return generated_images
+
+
+@router.post("/get-image-quality-round", response_model=ImageQualityRoundResponse)
+async def get_image_quality_round(
+    payload: ImageQualityRoundRequest,
+    openai_client: OpenAI = Depends(get_openai_client),
+    storage: Supabase = Depends(get_storage)
+):
+    """
+    Get or generate an image quality evaluation round.
+    If this is the first time someone plays this round, generate new images from the same prompt with different parameters.
+    Otherwise, return the existing round data.
+    """
+    try:
+        # Check if this round already exists
+        existing_round = storage.client.table("image_quality_rounds").select("*").eq(
+            "round_number", payload.round_number
+        ).eq("is_active", True).execute()
+        
+        if existing_round.data:
+            # Round exists, return it
+            round_data = existing_round.data[0]
+            
+            return ImageQualityRoundResponse(
+                round=ImageQualityRound(
+                    round_number=round_data["round_number"],
+                    prompt=round_data["prompt"],
+                    images=[ImageData(**img) for img in round_data["images_data"]],
+                    created_by=round_data["created_by"]
+                ),
+                is_first_player=False
+            )
+        
+        else:
+            # First player for this round - generate new images from same prompt with different parameters
+            is_first_player = True
+            
+            # Generate a single high-quality prompt for this round
+            base_prompt = generate_image_prompts_for_round(payload.round_number, openai_client)
+            
+            # Generate multiple variations of the same prompt with different parameters
+            generated_images = generate_image_variations_with_parameters(base_prompt, payload.round_number, openai_client)
+            
+            # Store the round in database
+            round_data = {
+                "round_number": payload.round_number,
+                "prompt": base_prompt,  # Store the actual generation prompt
+                "images_data": [img.model_dump() for img in generated_images],
+                "created_by": payload.wallet_address,
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+            
+            result = storage.client.table("image_quality_rounds").insert(round_data).execute()
+            stored_round = result.data[0]
+            
+            return ImageQualityRoundResponse(
+                round=ImageQualityRound(
+                    round_number=stored_round["round_number"],
+                    prompt=stored_round["prompt"],
+                    images=generated_images,
+                    created_by=stored_round["created_by"]
+                ),
+                is_first_player=is_first_player,
+                tokens_used=75  # Approximate tokens used for prompt generation
+            )
+            
+    except Exception as e:
+        print(f"Error getting image quality round: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get image quality round: {str(e)}"
+        )
+
+
+@router.post("/complete-image-quality-session", response_model=ImageQualitySessionResponse)
+async def complete_image_quality_session(
+    payload: ImageQualitySessionRequest,
+    storage: Supabase = Depends(get_storage)
+):
+    """
+    Complete an image quality evaluation session and update pet knowledge.
+    """
+    try:
+        # Store the session
+        session_data = {
+            "wallet_address": payload.wallet_address,
+            "game_type": "image_quality",
+            "rounds_data": payload.rounds_data,
+            "evaluations_data": payload.evaluations_data,
+            "total_score": payload.total_score,
+            "rounds_completed": len(payload.evaluations_data),
+            "duration_seconds": payload.duration_seconds,
+            "completed_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        session_result = storage.client.table("image_quality_sessions").insert(session_data).execute()
+        session_id = session_result.data[0]["id"]
+        
+        # Update pet image knowledge based on user selections
+        high_quality_images_added = 0
+        
+        for evaluation in payload.evaluations_data:
+            if evaluation.get("selected_image_url") and evaluation.get("round_number"):
+                # Find the corresponding round data
+                round_data = None
+                for round_info in payload.rounds_data:
+                    if round_info.get("round_number") == evaluation["round_number"]:
+                        round_data = round_info
+                        break
+                
+                if round_data and round_data.get("images"):
+                    # Find the selected image
+                    selected_image = None
+                    for img in round_data["images"]:
+                        if img.get("url") == evaluation["selected_image_url"]:
+                            selected_image = img
+                            break
+                    
+                    if selected_image:
+                        # Update or create pet image knowledge entry
+                        knowledge_data = {
+                            "pet_id": payload.pet_id,
+                            "image_url": selected_image["url"],
+                            "image_prompt": selected_image.get("prompt", ""),
+                            "metadata": {
+                                "generation_params": selected_image.get("generation_params", {}),
+                                "last_selected_at": datetime.now(timezone.utc).isoformat(),
+                                "session_id": session_id
+                            },
+                            "updated_at": datetime.now(timezone.utc).isoformat()
+                        }
+                        
+                        # Check if this image already exists for this pet
+                        existing = storage.client.table("pet_image_knowledge").select("*").eq(
+                            "pet_id", payload.pet_id
+                        ).eq("image_url", selected_image["url"]).execute()
+                        
+                        if existing.data:
+                            # Update existing entry
+                            current_entry = existing.data[0]
+                            updated_data = {
+                                "quality_score": current_entry["quality_score"] + 1,
+                                "evaluation_count": current_entry["evaluation_count"] + 1,
+                                "metadata": {
+                                    **current_entry.get("metadata", {}),
+                                    **knowledge_data["metadata"]
+                                },
+                                "updated_at": knowledge_data["updated_at"]
+                            }
+                            
+                            storage.client.table("pet_image_knowledge").update(updated_data).eq(
+                                "id", current_entry["id"]
+                            ).execute()
+                        else:
+                            # Create new entry
+                            knowledge_data.update({
+                                "quality_score": 1,
+                                "evaluation_count": 1,
+                                "created_at": datetime.now(timezone.utc).isoformat()
+                            })
+                            
+                            storage.client.table("pet_image_knowledge").insert(knowledge_data).execute()
+                            high_quality_images_added += 1
+        
+        return ImageQualitySessionResponse(
+            session_id=session_id,
+            rounds_completed=len(payload.evaluations_data),
+            high_quality_images_added=high_quality_images_added,
+            pet_knowledge_updated=True
+        )
+        
+    except Exception as e:
+        print(f"Error completing image quality session: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to complete image quality session: {str(e)}"
+        )
+
+
+def generate_image_prompts_for_round(round_number: int, openai_client: OpenAI) -> List[str]:
+    """Generate diverse image prompts for a specific round."""
+    try:
+        # Define prompt themes based on round number
+        themes = [
+            "nature and landscapes",
+            "animals and wildlife", 
+            "architecture and buildings",
+            "food and cooking",
+            "art and creativity",
+            "technology and science",
+            "people and portraits",
+            "abstract and artistic",
+            "vehicles and transportation",
+            "space and astronomy"
+        ]
+        
+        theme = themes[round_number % len(themes)]
+        
+        system_prompt = """You are an expert at creating diverse image generation prompts that will produce images of varying quality when generated by AI models. 
+
+Create 4 different prompts related to the given theme. The prompts should:
+1. Be specific enough to generate detailed images
+2. Vary in complexity (some simple, some complex)
+3. Cover different aspects of the theme
+4. Be suitable for AI image generation
+
+Return ONLY a JSON array of 4 strings, nothing else."""
+
+        user_prompt = f"""Create 4 diverse image generation prompts for the theme: "{theme}"
+
+Each prompt should be 10-15 words describing a specific scene or subject related to this theme.
+
+Example format:
+["prompt 1", "prompt 2", "prompt 3", "prompt 4"]"""
+
+        response = openai_client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            max_tokens=200,
+            temperature=0.8
+        )
+        
+        # Parse the JSON response
+        import json
+        prompts = json.loads(response.choices[0].message.content.strip())
+        
+        if isinstance(prompts, list) and len(prompts) >= 4:
+            return prompts[:4]
+        else:
+            raise ValueError("Invalid prompt format returned")
+            
+    except Exception as e:
+        print(f"Error generating image prompts: {e}")
+        # Fallback prompts if AI generation fails
+        fallback_prompts = [
+            f"A beautiful landscape with mountains and trees (Round {round_number})",
+            f"A colorful abstract painting with geometric shapes (Round {round_number})",
+            f"A cute animal in its natural habitat (Round {round_number})",
+            f"Modern architecture with interesting lighting (Round {round_number})"
+        ]
+        return fallback_prompts
+
+
+# Helper functions
+async def get_user_progress(wallet_address: str, language: str, storage: Supabase) -> Optional[dict]:
+    """Get user's progress for a specific language"""
+    result = storage.client.table("language_progress").select("*").eq(
+        "wallet_address", wallet_address
+    ).eq(
+        "language", language
+    ).execute()
+    
+    return result.data[0] if result.data else None
+
+
+async def get_learned_words(wallet_address: str, language: str, storage: Supabase, mastery_threshold: int = 80) -> List[str]:
+    """Get words the user has already mastered"""
+    result = storage.client.table("learned_words").select("word").eq(
+        "wallet_address", wallet_address
+    ).eq(
+        "language", language
+    ).gte(
+        "mastery_level", mastery_threshold
+    ).execute()
+    
+    return [row['word'] for row in result.data]
+
+
+async def get_recently_shown_words(wallet_address: str, language: str, storage: Supabase, last_sessions: int = 5) -> List[str]:
+    """Get words shown in recent sessions"""
+    result = storage.client.table("flashcard_sessions").select("session_data").eq(
+        "wallet_address", wallet_address
+    ).eq(
+        "language", language
+    ).order("completed_at", desc=True).limit(last_sessions).execute()
+    
+    shown_words = []
+    for session in result.data:
+        try:
+            if session.get('session_data'):
+                # Parse session_data which contains the flashcards and answers
+                import json
+                if isinstance(session['session_data'], str):
+                    session_data = json.loads(session['session_data'])
+                else:
+                    session_data = session['session_data']
+                
+                # Extract words from flashcards in session_data
+                if 'flashcards' in session_data:
+                    for card in session_data['flashcards']:
+                        if 'word' in card:
+                            shown_words.append(card['word'])
+        except (json.JSONDecodeError, KeyError, TypeError) as e:
+            print(f"Error parsing session data: {e}")
+            continue
+    
+    # Remove duplicates and return
+    return list(set(shown_words))
+
+
+async def create_or_update_progress(wallet_address: str, language: str, storage: Supabase) -> dict:
+    """Create or get existing progress for user-language combination"""
+    # Try to get existing progress
+    progress = await get_user_progress(wallet_address, language, storage)
+    
+    if not progress:
+        # Create new progress entry
+        new_progress = {
+            'wallet_address': wallet_address,
+            'language': language,
+            'level': 1,
+            'experience_points': 0,
+            'current_difficulty': 'beginner',
+            'total_words_learned': 0,
+            'total_sessions_completed': 0,
+            'current_streak': 0,
+            'best_streak': 0,
+            'accuracy_rate': 0.0,
+            'last_played': datetime.now(timezone.utc).isoformat(),
+            'created_at': datetime.now(timezone.utc).isoformat(),
+            'updated_at': datetime.now(timezone.utc).isoformat()
+        }
+        
+        result = storage.client.table("language_progress").insert(new_progress).execute()
+        progress = result.data[0]
+    
+    return progress

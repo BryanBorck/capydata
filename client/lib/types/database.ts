@@ -585,6 +585,130 @@ export type Database = {
           }
         ]
       }
+      image_quality_rounds: {
+        Row: {
+          id: string
+          round_number: number
+          prompt: string
+          images_data: Json
+          created_by: string | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          round_number: number
+          prompt: string
+          images_data: Json
+          created_by?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          round_number?: number
+          prompt?: string
+          images_data?: Json
+          created_by?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      image_quality_sessions: {
+        Row: {
+          id: string
+          wallet_address: string
+          game_type: string
+          rounds_data: Json
+          evaluations_data: Json
+          total_score: number
+          rounds_completed: number
+          duration_seconds: number
+          completed_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          wallet_address: string
+          game_type?: string
+          rounds_data: Json
+          evaluations_data: Json
+          total_score?: number
+          rounds_completed?: number
+          duration_seconds?: number
+          completed_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          wallet_address?: string
+          game_type?: string
+          rounds_data?: Json
+          evaluations_data?: Json
+          total_score?: number
+          rounds_completed?: number
+          duration_seconds?: number
+          completed_at?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "image_quality_sessions_wallet_address_fkey"
+            columns: ["wallet_address"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["wallet_address"]
+          }
+        ]
+      }
+      pet_image_knowledge: {
+        Row: {
+          id: string
+          pet_id: string
+          image_url: string
+          image_prompt: string
+          quality_score: number
+          evaluation_count: number
+          metadata: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          pet_id: string
+          image_url: string
+          image_prompt: string
+          quality_score?: number
+          evaluation_count?: number
+          metadata?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          pet_id?: string
+          image_url?: string
+          image_prompt?: string
+          quality_score?: number
+          evaluation_count?: number
+          metadata?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pet_image_knowledge_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pets"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       skill_boosts: {
         Row: {
           id: string
