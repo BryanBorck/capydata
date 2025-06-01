@@ -29,7 +29,23 @@ export default function StudioPanel({
 
   return (
     <div className="h-full overflow-auto px-6 py-6 pb-16">
-      <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-6">
+      {/* Controls Section */}
+      <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-6 relative mb-6">
+        {/* Loading Overlay for Controls */}
+        {isGeneratingContent && (
+          <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center z-10">
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="h-12 w-12 animate-spin text-gray-800" />
+              <div className="font-silkscreen text-lg font-bold text-gray-800 uppercase">
+                LOADING...
+              </div>
+              <div className="font-silkscreen text-xs text-gray-600 uppercase text-center">
+                IT&apos;S FINE, ALWAYS TAKE SOME TIME
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="mb-6">
           <div className="font-silkscreen text-xl font-bold text-gray-800 uppercase mb-2 flex items-center gap-3">
             <Sparkles className="h-6 w-6" />
@@ -123,9 +139,11 @@ export default function StudioPanel({
             </div>
           </div>
         )}
+      </div>
 
-        {/* Generated Content Display */}
-        {generatedContent && (
+      {/* Generated Content Display - Only show when not generating and content exists */}
+      {generatedContent && !isGeneratingContent && (
+        <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-6">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="font-silkscreen text-lg font-bold text-gray-800 uppercase">
@@ -181,8 +199,8 @@ export default function StudioPanel({
               </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 } 

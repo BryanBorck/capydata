@@ -14,6 +14,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Poetry
@@ -26,7 +27,7 @@ RUN poetry config virtualenvs.create false
 COPY pyproject.toml poetry.lock ./
 
 # Install dependencies
-RUN poetry install --only=main --no-dev
+RUN poetry install --only main --no-root
 
 # Copy application code
 COPY src/ ./src/
@@ -37,9 +38,9 @@ RUN mkdir -p data/images
 # Expose port (Cloud Run uses PORT environment variable)
 EXPOSE 8080
 
-# Health check
+# Health check (using curl instead of python requests to avoid dependency issues)
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8080/health')" || exit 1
+    CMD curl -f http://localhost:${PORT:-8080}/health || exit 1
 
 # Run the application
 CMD exec uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8080} 
