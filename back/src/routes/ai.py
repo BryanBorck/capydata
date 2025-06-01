@@ -256,8 +256,7 @@ Focus on being helpful and insightful while staying grounded in the provided dat
                 {"role": "user", "content": user_prompt}
             ],
             max_tokens=800,
-            temperature=0.7,
-            response_format={"type": "json_object"}
+            temperature=0.7
         )
         
         inference_text = response.choices[0].message.content
@@ -317,20 +316,19 @@ Instructions:
 - Be helpful and engaging while staying grounded in the available sources"""
 
         response = openai_client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
             max_tokens=600,
             temperature=0.6,
-            response_format={"type": "json_object"}
         )
         
         return {
             "response": response.choices[0].message.content,
             "tokens_used": response.usage.total_tokens if response.usage else None,
-            "model": "gpt-3.5-turbo"
+            "model": "gpt-4o"
         }
         
     except Exception as e:
@@ -448,14 +446,13 @@ Mix different categories: actions, objects, adjectives, expressions, etc.
 Return valid JSON only, no additional text."""
 
         response = openai_client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
             max_tokens=1500,
-            temperature=0.3,  # Lower temperature for more consistent JSON output
-            response_format={"type": "json_object"}  # Force JSON response format
+            temperature=0.3,  # Lower temperature for more consistent JSON output  # Force JSON response format
         )
         
         response_text = response.choices[0].message.content
@@ -653,14 +650,13 @@ Knowledge Base:
 Generate the {payload.content_type.replace('_', ' ')} based on the provided knowledge."""
 
         response = openai_client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
             max_tokens=1200,
             temperature=0.7,
-            response_format={"type": "json_object"}
         )
         
         return ContentGenerationResponse(
@@ -966,8 +962,7 @@ Return valid JSON only, no additional text."""
                 {"role": "user", "content": user_prompt}
             ],
             max_tokens=1000,
-            temperature=0.4,  # Lower temperature for more consistent results
-            response_format={"type": "json_object"}  # Force JSON response format
+            temperature=0.4,  # Lower temperature for more consistent results  # Force JSON response format
         )
         
         response_text = response.choices[0].message.content
@@ -1801,8 +1796,7 @@ Return valid JSON only, no additional text."""
                 {"role": "user", "content": user_prompt}
             ],
             max_tokens=2000,
-            temperature=0.9,  # Maximum temperature for maximum creativity and variety
-            response_format={"type": "json_object"}  # Force JSON response format
+            temperature=0.9,  # Maximum temperature for maximum creativity and variety  # Force JSON response format
         )
         
         response_text = response.choices[0].message.content
