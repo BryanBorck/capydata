@@ -6,60 +6,33 @@ import { ArrowLeft, Trophy, BookOpen, Star, HelpCircle, X, Home, RotateCcw } fro
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 import { useUser } from "@/providers/user-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { getGameConfig } from "../game-config";
 import { useGameRewards } from "@/lib/hooks/use-game-rewards";
 
-// Trivia questions data
-const TRIVIA_QUESTIONS = [
-  {
-    question: "Which programming language was originally called 'Oak' before being renamed?",
-    fact: "Java was originally developed by James Gosling at Sun Microsystems and was initially called Oak after an oak tree that stood outside Gosling's office.",
-    correct: "Java",
-    options: ["Java", "Python", "JavaScript", "C++"],
-    category: "Technology",
-    source: "Computer Science History"
-  },
-  {
-    question: "What natural phenomenon causes the Northern Lights (Aurora Borealis)?",
-    fact: "The Northern Lights are caused by solar particles colliding with Earth's magnetic field and atmosphere, creating beautiful light displays typically visible near the Arctic Circle.",
-    correct: "Solar particles hitting Earth's atmosphere",
-    options: ["Solar particles hitting Earth's atmosphere", "Moon's gravitational pull", "Volcanic activity", "Ocean currents"],
-    category: "Science",
-    source: "Atmospheric Physics"
-  },
-  {
-    question: "Which ancient wonder of the world was located in Alexandria, Egypt?",
-    fact: "The Lighthouse of Alexandria, also known as the Pharos of Alexandria, was one of the Seven Wonders of the Ancient World and guided ships safely to the harbor for over 1,500 years.",
-    correct: "The Lighthouse of Alexandria",
-    options: ["The Lighthouse of Alexandria", "The Hanging Gardens", "The Colossus", "The Temple of Artemis"],
-    category: "History",
-    source: "Ancient Civilizations"
-  },
-  {
-    question: "What unique ability do octopuses have that helps them escape predators?",
-    fact: "Octopuses can change both their color and texture to perfectly match their surroundings, making them nearly invisible to predators and prey.",
-    correct: "Change color and texture to camouflage",
-    options: ["Change color and texture to camouflage", "Produce electric shocks", "Fly short distances", "Become completely invisible"],
-    category: "Biology",
-    source: "Marine Biology"
-  },
-  {
-    question: "Which country has the most time zones?",
-    fact: "France has the most time zones of any country (12), due to its overseas territories scattered across the globe, from French Polynesia to New Caledonia.",
-    correct: "France",
-    options: ["France", "Russia", "United States", "China"],
-    category: "Geography",
-    source: "World Geography"
-  },
-  {
-    question: "What is the name of the closest star to our solar system?",
-    fact: "Proxima Centauri is the closest star to our solar system at about 4.24 light-years away. It's actually part of a triple star system called Alpha Centauri.",
-    correct: "Proxima Centauri",
-    options: ["Proxima Centauri", "Alpha Centauri", "Sirius", "Vega"],
-    category: "Astronomy",
-    source: "Space Science"
-  }
-];
+// API Configuration
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+// Types for AI-generated trivia questions
+interface TriviaQuestion {
+  question: string;
+  correct_answer: string;
+  options: string[];
+  category: string;
+  fact: string;
+  source: string;
+}
+
+interface TriviaQuestionResponse {
+  questions: TriviaQuestion[];
+  tokens_used?: number;
+}
+
+interface TriviaAnswer {
+  is_correct: boolean;
+  selected_answer: string;
+  time_taken: number;
+}
 
 export default function KnowledgeTriviaGamePage() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -69,15 +42,23 @@ export default function KnowledgeTriviaGamePage() {
   const [selectedAnswer, setSelectedAnswer] = useState<string>('');
   const [showFact, setShowFact] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [triviaQuestions, setTriviaQuestions] = useState<TriviaQuestion[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string>('');
+  
+  // Session tracking state
+  const [sessionAnswers, setSessionAnswers] = useState<TriviaAnswer[]>([]);
+  const [sessionStartTime, setSessionStartTime] = useState<number>(0);
+  const [questionStartTime, setQuestionStartTime] = useState<number>(0);
+  const [gameStarted, setGameStarted] = useState(false);
   
   const router = useRouter();
-  const { isAuthenticated } = useUser();
+  const { user, isAuthenticated } = useUser();
 
   // Get game configuration
   const gameConfig = getGameConfig('knowledge-trivia');
   
   const totalQuestions = gameConfig?.stats.questions || 6;
-  const question = TRIVIA_QUESTIONS[currentQuestion];
 
   // Use game rewards hook
   const { rewardsAwarded, awardRewards, resetRewards } = useGameRewards(
@@ -103,13 +84,115 @@ export default function KnowledgeTriviaGamePage() {
     }
   }, [isComplete, rewardsAwarded, awardRewards]);
 
+  // Generate trivia questions when component mounts
+  useEffect(() => {
+    if (isAuthenticated && !gameStarted) {
+      generateTriviaQuestions();
+    }
+  }, [isAuthenticated, gameStarted]);
+
+  const generateTriviaQuestions = async () => {
+    if (!user?.wallet_address) {
+      toast.error("User wallet address not found");
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+    setSessionStartTime(Date.now());
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/ai/generate-trivia-questions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          count: totalQuestions,
+          difficulty: 'easy', // Could be made configurable later
+          wallet_address: user.wallet_address
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: TriviaQuestionResponse = await response.json();
+      setTriviaQuestions(data.questions);
+      setGameStarted(true);
+      setQuestionStartTime(Date.now());
+      
+      toast.success(`Generated ${data.questions.length} unique trivia questions!`);
+    } catch (error) {
+      console.error('Error generating trivia questions:', error);
+      setError('Failed to generate trivia questions. Please try again.');
+      toast.error('Failed to generate trivia questions. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSessionComplete = async (finalAnswer: TriviaAnswer) => {
+    const allAnswers = [...sessionAnswers, finalAnswer];
+    
+    if (!user?.wallet_address) {
+      console.error("No wallet address available for session completion");
+      setIsComplete(true);
+      return;
+    }
+
+    try {
+      const sessionDuration = Math.floor((Date.now() - sessionStartTime) / 1000);
+      
+      const response = await fetch(`${API_BASE_URL}/api/v1/ai/complete-trivia-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          wallet_address: user.wallet_address,
+          questions_data: triviaQuestions,
+          answers_data: allAnswers,
+          total_score: score + (finalAnswer.is_correct ? 15 : 5),
+          duration_seconds: sessionDuration
+        }),
+      });
+
+      if (response.ok) {
+        const sessionResult = await response.json();
+        console.log('Trivia session completed:', sessionResult);
+        toast.success(`Session completed! Accuracy: ${sessionResult.accuracy_rate.toFixed(1)}%`);
+      } else {
+        console.error('Failed to complete trivia session');
+      }
+    } catch (error) {
+      console.error('Error completing trivia session:', error);
+    } finally {
+      setIsComplete(true);
+    }
+  };
+
   const handleAnswerSelect = (answer: string) => {
-    if (selectedAnswer !== '') return;
+    if (selectedAnswer !== '' || isLoading) return;
+    
+    const answerTime = Date.now();
+    const timeTaken = Math.max(1, Math.floor((answerTime - questionStartTime) / 1000));
     
     setSelectedAnswer(answer);
     setShowFeedback(true);
     
-    const isCorrect = answer === question.correct;
+    const question = triviaQuestions[currentQuestion];
+    const isCorrect = answer === question.correct_answer;
+    
+    // Record the answer
+    const answerData: TriviaAnswer = {
+      is_correct: isCorrect,
+      selected_answer: answer,
+      time_taken: timeTaken
+    };
+    setSessionAnswers(prev => [...prev, answerData]);
+    
     const points = isCorrect ? 15 : 5;
     setScore(score + points);
     
@@ -118,13 +201,14 @@ export default function KnowledgeTriviaGamePage() {
     }, 1500);
     
     setTimeout(() => {
-      if (currentQuestion < totalQuestions - 1) {
+      if (currentQuestion < triviaQuestions.length - 1) {
         setCurrentQuestion(currentQuestion + 1);
         setSelectedAnswer('');
         setShowFeedback(false);
         setShowFact(false);
+        setQuestionStartTime(Date.now());
       } else {
-        setIsComplete(true);
+        handleSessionComplete(answerData);
       }
     }, 4000);
   };
@@ -136,7 +220,11 @@ export default function KnowledgeTriviaGamePage() {
     setShowFeedback(false);
     setSelectedAnswer('');
     setShowFact(false);
+    setTriviaQuestions([]);
+    setSessionAnswers([]);
+    setGameStarted(false);
     resetRewards();
+    // This will trigger generateTriviaQuestions again
   };
 
   // Early returns after all hooks
@@ -147,6 +235,37 @@ export default function KnowledgeTriviaGamePage() {
   if (!isAuthenticated) {
     return null; // Will redirect in useEffect
   }
+
+  // Show loading state while generating questions
+  if (isLoading || triviaQuestions.length === 0) {
+    return (
+      <main className="h-[100dvh] w-full relative overflow-hidden pb-16 flex items-center justify-center">
+        <FlickeringGrid
+          className="absolute inset-0 -z-5 h-full w-full [mask-image:radial-gradient(1200px_circle_at_center,transparent,white)]"
+          squareSize={4}
+          gridGap={6}
+          color="#6B7280"
+          maxOpacity={0.5}
+          flickerChance={0.1}
+        />
+        <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-8 text-center">
+          <div className="font-silkscreen text-lg font-bold text-gray-800 uppercase mb-4">
+            {isLoading ? "GENERATING AI TRIVIA..." : "LOADING GAME..."}
+          </div>
+          <div className="font-silkscreen text-sm text-gray-600 uppercase">
+            {isLoading ? "Creating unique questions just for you!" : "Please wait..."}
+          </div>
+          {error && (
+            <div className="mt-4 font-silkscreen text-xs text-red-600 uppercase">
+              {error}
+            </div>
+          )}
+        </div>
+      </main>
+    );
+  }
+
+  const question = triviaQuestions[currentQuestion];
 
   return (
     <main className="h-[100dvh] w-full relative overflow-hidden pb-16">
@@ -349,11 +468,11 @@ export default function KnowledgeTriviaGamePage() {
                 <div className="space-y-4">
                   <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-6 text-center">
                     <div className={`border-2 shadow-[2px_2px_0_#374151] p-4 ${
-                      selectedAnswer === question.correct 
+                      selectedAnswer === question.correct_answer 
                         ? 'bg-green-100 border-green-600' 
                         : 'bg-red-100 border-red-600'
                     }`}>
-                      {selectedAnswer === question.correct ? (
+                      {selectedAnswer === question.correct_answer ? (
                         <>
                           <div className="font-silkscreen text-sm font-bold text-green-800 uppercase mb-2">
                             CORRECT! +15 POINTS!
@@ -368,7 +487,7 @@ export default function KnowledgeTriviaGamePage() {
                             NOT QUITE! +5 POINTS FOR TRYING!
                           </div>
                           <div className="font-silkscreen text-xs text-red-700 uppercase">
-                            CORRECT ANSWER: {question.correct}
+                            CORRECT ANSWER: {question.correct_answer}
                           </div>
                         </>
                       )}

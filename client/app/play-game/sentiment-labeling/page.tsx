@@ -6,17 +6,30 @@ import { ArrowLeft, Trophy, ThumbsUp, ThumbsDown, HelpCircle, X, Home, RotateCcw
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 import { useUser } from "@/providers/user-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { getGameConfig } from "../game-config";
 import { useGameRewards } from "@/lib/hooks/use-game-rewards";
 
-// Sample texts for sentiment analysis
-const SAMPLE_TEXTS = [
-  "I absolutely love this product! It exceeded all my expectations.",
-  "This is the worst experience I've ever had. Completely disappointed.",
-  "The weather today is quite nice, not too hot or cold.",
-  "I'm so excited about the upcoming vacation! Can't wait!",
-  "The service was okay, nothing special but not terrible either."
-];
+// API Configuration
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+// Types for AI-generated sentiment texts
+interface SentimentText {
+  text: string;
+  correct_sentiment: 'positive' | 'negative' | 'neutral';
+  difficulty_level: string;
+}
+
+interface SentimentTextResponse {
+  texts: SentimentText[];
+  tokens_used?: number;
+}
+
+interface SentimentAnswer {
+  is_correct: boolean;
+  selected_sentiment: string;
+  time_taken: number;
+}
 
 export default function SentimentLabelingGamePage() {
   const [currentText, setCurrentText] = useState(0);
@@ -25,9 +38,18 @@ export default function SentimentLabelingGamePage() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [selectedSentiment, setSelectedSentiment] = useState<string>('');
   const [showHelp, setShowHelp] = useState(false);
+  const [sentimentTexts, setSentimentTexts] = useState<SentimentText[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string>('');
+  
+  // Session tracking state
+  const [sessionAnswers, setSessionAnswers] = useState<SentimentAnswer[]>([]);
+  const [sessionStartTime, setSessionStartTime] = useState<number>(0);
+  const [questionStartTime, setQuestionStartTime] = useState<number>(0);
+  const [gameStarted, setGameStarted] = useState(false);
   
   const router = useRouter();
-  const { isAuthenticated } = useUser();
+  const { user, isAuthenticated } = useUser();
 
   // Get game configuration
   const gameConfig = getGameConfig('sentiment-labeling');
@@ -58,22 +80,166 @@ export default function SentimentLabelingGamePage() {
     }
   }, [isComplete, rewardsAwarded, awardRewards]);
 
+  // Generate sentiment texts when component mounts
+  useEffect(() => {
+    if (isAuthenticated && !gameStarted) {
+      generateSentimentTexts();
+    }
+  }, [isAuthenticated, gameStarted]);
+
+  const generateSentimentTexts = async () => {
+    if (!user?.wallet_address) {
+      toast.error("User wallet address not found");
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+    setSessionStartTime(Date.now());
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/ai/generate-sentiment-texts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          count: totalTexts,
+          difficulty: 'easy', // Could be made configurable later
+          wallet_address: user.wallet_address
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: SentimentTextResponse = await response.json();
+      setSentimentTexts(data.texts);
+      setGameStarted(true);
+      setQuestionStartTime(Date.now());
+      
+      toast.success(`Generated ${data.texts.length} sentiment texts for analysis!`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate sentiment texts';
+      setError(errorMessage);
+      toast.error(`Failed to generate sentiment texts: ${errorMessage}`);
+      
+      // Fallback to sample texts if API fails
+      const fallbackTexts: SentimentText[] = [
+        {
+          text: "I absolutely love this product! It exceeded all my expectations.",
+          correct_sentiment: 'positive',
+          difficulty_level: 'easy'
+        },
+        {
+          text: "This is the worst experience I've ever had. Completely disappointed.",
+          correct_sentiment: 'negative',
+          difficulty_level: 'easy'
+        },
+        {
+          text: "The weather today is quite nice, not too hot or cold.",
+          correct_sentiment: 'neutral',
+          difficulty_level: 'easy'
+        },
+        {
+          text: "I'm so excited about the upcoming vacation! Can't wait!",
+          correct_sentiment: 'positive',
+          difficulty_level: 'easy'
+        },
+        {
+          text: "The service was okay, nothing special but not terrible either.",
+          correct_sentiment: 'neutral',
+          difficulty_level: 'easy'
+        }
+      ];
+      setSentimentTexts(fallbackTexts);
+      setGameStarted(true);
+      setQuestionStartTime(Date.now());
+      
+      toast.info("Using sample texts due to API error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSentimentSelect = (sentiment: 'positive' | 'negative' | 'neutral') => {
-    if (selectedSentiment !== '') return;
+    if (selectedSentiment !== '' || isLoading) return;
+    
+    const answerTime = Date.now();
+    const timeTaken = Math.max(1, Math.floor((answerTime - questionStartTime) / 1000));
     
     setSelectedSentiment(sentiment);
     setShowFeedback(true);
-    setScore(score + 10);
+    
+    const currentSentimentText = sentimentTexts[currentText];
+    const isCorrect = sentiment === currentSentimentText.correct_sentiment;
+    
+    // Record the answer
+    const answerData: SentimentAnswer = {
+      is_correct: isCorrect,
+      selected_sentiment: sentiment,
+      time_taken: timeTaken
+    };
+    setSessionAnswers(prev => [...prev, answerData]);
+    
+    // Award points
+    const points = isCorrect ? 15 : 5; // More points for correct answers
+    setScore(score + points);
     
     setTimeout(() => {
-      if (currentText < totalTexts - 1) {
+      if (currentText < sentimentTexts.length - 1) {
         setCurrentText(currentText + 1);
         setShowFeedback(false);
         setSelectedSentiment('');
+        setQuestionStartTime(Date.now());
       } else {
-        setIsComplete(true);
+        handleSessionComplete(answerData);
       }
     }, 1500);
+  };
+
+  const handleSessionComplete = async (finalAnswer: SentimentAnswer) => {
+    if (!user?.wallet_address) {
+      setIsComplete(true);
+      return;
+    }
+    
+    const allAnswers = [...sessionAnswers, finalAnswer];
+    const sessionDuration = Math.floor((Date.now() - sessionStartTime) / 1000);
+    const finalScore = score + (finalAnswer.is_correct ? 15 : 5);
+    
+    try {
+      // Submit session data to backend
+      const sessionData = {
+        wallet_address: user.wallet_address,
+        texts_data: sentimentTexts,
+        answers_data: allAnswers,
+        total_score: finalScore,
+        duration_seconds: sessionDuration
+      };
+      
+      const response = await fetch(`${API_BASE_URL}/api/v1/ai/complete-sentiment-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(sessionData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      setIsComplete(true);
+      toast.success(`Session complete! Accuracy: ${Math.round(result.accuracy_rate)}% (${result.correct_answers}/${result.total_answers})`);
+    } catch (error) {
+      console.error('Failed to complete session:', error);
+      toast.error('Failed to save session progress');
+      setIsComplete(true); // Still complete the game even if tracking fails
+    }
   };
 
   const handlePlayAgain = () => {
@@ -82,6 +248,10 @@ export default function SentimentLabelingGamePage() {
     setIsComplete(false);
     setShowFeedback(false);
     setSelectedSentiment('');
+    setSentimentTexts([]);
+    setSessionAnswers([]);
+    setGameStarted(false);
+    setError('');
     resetRewards();
   };
 
@@ -167,12 +337,42 @@ export default function SentimentLabelingGamePage() {
       <div className="relative z-10 h-full overflow-y-auto px-6 py-8">
         <div className="max-w-2xl mx-auto space-y-6">
           
-          {!isComplete && (
+          {/* Loading State */}
+          {isLoading && (
+            <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-8 text-center">
+              <div className="font-silkscreen text-lg font-bold text-gray-800 uppercase mb-4">
+                GENERATING AI SENTIMENT TEXTS...
+              </div>
+              <div className="font-silkscreen text-sm text-gray-600 uppercase">
+                PLEASE WAIT WHILE WE CREATE UNIQUE TEXTS FOR YOU
+              </div>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && !isLoading && (
+            <div className="bg-white border-4 border-red-600 shadow-[8px_8px_0_#dc2626] p-6 text-center">
+              <div className="font-silkscreen text-lg font-bold text-red-800 uppercase mb-2">
+                ERROR GENERATING TEXTS
+              </div>
+              <div className="font-silkscreen text-sm text-red-600 uppercase mb-4">
+                {error}
+              </div>
+              <button
+                onClick={generateSentimentTexts}
+                className="font-silkscreen text-xs font-bold text-white uppercase bg-red-600 border-2 border-red-800 shadow-[2px_2px_0_#dc2626] px-4 py-2 hover:bg-red-500 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#dc2626] transition-all"
+              >
+                TRY AGAIN
+              </button>
+            </div>
+          )}
+          
+          {!isLoading && !error && sentimentTexts.length > 0 && !isComplete && (
             /* Stats Cards Row */
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-purple-100 border-4 border-purple-600 shadow-[4px_4px_0_#581c87] p-2 text-center flex flex-col items-center justify-center">
                 <div className="font-silkscreen text-lg font-bold text-purple-800 uppercase">
-                  {currentText + 1}/{totalTexts}
+                  {currentText + 1}/{sentimentTexts.length}
                 </div>
                 <div className="font-silkscreen text-xs font-bold text-purple-700 uppercase">
                   TEXT
@@ -210,7 +410,7 @@ export default function SentimentLabelingGamePage() {
                 SENTIMENT ANALYSIS COMPLETE!
               </div>
               <div className="font-silkscreen text-sm text-gray-600 uppercase mb-6">
-                GREAT JOB ANALYZING TEXT SENTIMENT!
+                YOU EARNED {score} POINTS HELPING TRAIN AI!
               </div>
               
               <div className="space-y-4">
@@ -247,6 +447,7 @@ export default function SentimentLabelingGamePage() {
               </div>
             </div>
           ) : (
+            !isLoading && !error && sentimentTexts.length > 0 && (
             /* Game Interface */
             <div className="space-y-6">
               {/* Instructions */}
@@ -260,7 +461,7 @@ export default function SentimentLabelingGamePage() {
               <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-8">
                 <div className="bg-gray-100 border-4 border-gray-600 shadow-[4px_4px_0_#374151] p-6 text-center">
                   <div className="font-silkscreen text-lg text-gray-800 leading-relaxed">
-                    &quot;{SAMPLE_TEXTS[currentText]}&quot;
+                    &quot;{sentimentTexts[currentText]?.text}&quot;
                   </div>
                 </div>
               </div>
@@ -306,17 +507,33 @@ export default function SentimentLabelingGamePage() {
               ) : (
                 /* Feedback */
                 <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-6 text-center">
-                  <div className="bg-blue-100 border-2 border-blue-600 shadow-[2px_2px_0_#1e3a8a] p-4">
-                    <div className="font-silkscreen text-sm font-bold text-blue-800 uppercase mb-2">
-                      +10 POINTS!
+                  <div className={`border-2 shadow-[2px_2px_0_#374151] p-4 ${
+                    sessionAnswers[sessionAnswers.length - 1]?.is_correct 
+                      ? 'bg-green-100 border-green-600' 
+                      : 'bg-orange-100 border-orange-600'
+                  }`}>
+                    <div className={`font-silkscreen text-sm font-bold uppercase mb-2 ${
+                      sessionAnswers[sessionAnswers.length - 1]?.is_correct 
+                        ? 'text-green-800' 
+                        : 'text-orange-800'
+                    }`}>
+                      {sessionAnswers[sessionAnswers.length - 1]?.is_correct ? '+15 POINTS!' : '+5 POINTS!'}
                     </div>
-                    <div className="font-silkscreen text-xs text-blue-700 uppercase">
-                      THANKS FOR HELPING TRAIN OUR SENTIMENT AI!
+                    <div className={`font-silkscreen text-xs uppercase ${
+                      sessionAnswers[sessionAnswers.length - 1]?.is_correct 
+                        ? 'text-green-700' 
+                        : 'text-orange-700'
+                    }`}>
+                      {sessionAnswers[sessionAnswers.length - 1]?.is_correct 
+                        ? 'CORRECT! THANKS FOR HELPING TRAIN OUR AI!' 
+                        : `GOOD TRY! THE CORRECT ANSWER WAS ${sentimentTexts[currentText]?.correct_sentiment.toUpperCase()}`
+                      }
                     </div>
                   </div>
                 </div>
               )}
             </div>
+            )
           )}
         </div>
       </div>

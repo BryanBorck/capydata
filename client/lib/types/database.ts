@@ -200,6 +200,171 @@ export type Database = {
           }
         ]
       }
+      language_progress: {
+        Row: {
+          id: string
+          wallet_address: string
+          language: string
+          level: number
+          experience_points: number
+          current_difficulty: 'beginner' | 'intermediate' | 'advanced'
+          total_words_learned: number
+          total_sessions_completed: number
+          current_streak: number
+          best_streak: number
+          accuracy_rate: number
+          last_played: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          wallet_address: string
+          language: string
+          level?: number
+          experience_points?: number
+          current_difficulty?: 'beginner' | 'intermediate' | 'advanced'
+          total_words_learned?: number
+          total_sessions_completed?: number
+          current_streak?: number
+          best_streak?: number
+          accuracy_rate?: number
+          last_played?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          wallet_address?: string
+          language?: string
+          level?: number
+          experience_points?: number
+          current_difficulty?: 'beginner' | 'intermediate' | 'advanced'
+          total_words_learned?: number
+          total_sessions_completed?: number
+          current_streak?: number
+          best_streak?: number
+          accuracy_rate?: number
+          last_played?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "language_progress_wallet_address_fkey"
+            columns: ["wallet_address"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["wallet_address"]
+          }
+        ]
+      }
+      flashcard_sessions: {
+        Row: {
+          id: string
+          wallet_address: string
+          language: string
+          difficulty: 'beginner' | 'intermediate' | 'advanced'
+          total_cards: number
+          correct_answers: number
+          total_points: number
+          duration_seconds: number
+          session_data: Json
+          completed_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          wallet_address: string
+          language: string
+          difficulty: 'beginner' | 'intermediate' | 'advanced'
+          total_cards: number
+          correct_answers: number
+          total_points: number
+          duration_seconds: number
+          session_data?: Json
+          completed_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          wallet_address?: string
+          language?: string
+          difficulty?: 'beginner' | 'intermediate' | 'advanced'
+          total_cards?: number
+          correct_answers?: number
+          total_points?: number
+          duration_seconds?: number
+          session_data?: Json
+          completed_at?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcard_sessions_wallet_address_fkey"
+            columns: ["wallet_address"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["wallet_address"]
+          }
+        ]
+      }
+      learned_words: {
+        Row: {
+          id: string
+          wallet_address: string
+          language: string
+          word: string
+          translation: string
+          pronunciation: string
+          times_seen: number
+          times_correct: number
+          mastery_level: number
+          last_seen: string
+          first_learned: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          wallet_address: string
+          language: string
+          word: string
+          translation: string
+          pronunciation: string
+          times_seen?: number
+          times_correct?: number
+          mastery_level?: number
+          last_seen?: string
+          first_learned?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          wallet_address?: string
+          language?: string
+          word?: string
+          translation?: string
+          pronunciation?: string
+          times_seen?: number
+          times_correct?: number
+          mastery_level?: number
+          last_seen?: string
+          first_learned?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learned_words_wallet_address_fkey"
+            columns: ["wallet_address"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["wallet_address"]
+          }
+        ]
+      }
       skill_events: {
         Row: {
           id: string
