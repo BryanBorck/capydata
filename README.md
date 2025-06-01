@@ -214,5 +214,4 @@ MIT License - see LICENSE file for details.
 
 <div align="center">
   <p>Built for the World ecosystem</p>
-  <p>© 2024 CapyData Team. All rights reserved.</p>
 </div>
