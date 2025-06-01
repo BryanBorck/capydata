@@ -76,16 +76,16 @@ export default function ChatPanel({
           {/* Instruction Banner */}
           <div className="bg-yellow-50 border-2 border-yellow-400 shadow-[2px_2px_0_#ca8a04] p-3 mb-4">
             <p className="font-silkscreen text-xs text-yellow-800 uppercase text-center">
-              💡 TIP: GO TO <span className="font-bold text-blue-600">SOURCES</span> TAB TO FEED DATA AND GET BETTER INSIGHTS
+              💡 TIP: GO TO <span className="font-bold text-violet-600">SOURCES</span> TAB TO FEED DATA AND GET BETTER INSIGHTS
             </p>
           </div>
           
           {/* Knowledge Header - Always show */}
           <div className="bg-gray-50 border-2 border-gray-300 shadow-[4px_4px_0_#d1d5db] p-4 mb-6">
             <div className="flex flex-col items-start space-y-3">
-              <div className="w-12 h-12 bg-blue-100 border-2 border-blue-600 shadow-[2px_2px_0_#1e40af] flex items-center justify-center flex-shrink-0">
+              <div className="w-12 h-12 bg-violet-100 border-2 border-violet-600 shadow-[2px_2px_0_#581c87] flex items-center justify-center flex-shrink-0">
                 {isLoadingSummary ? (
-                  <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                  <Loader2 className="h-6 w-6 animate-spin text-violet-600" />
                 ) : (
                   <div className="text-4xl">{knowledgeSummary?.icon || '📚'}</div>
                 )}
@@ -192,7 +192,7 @@ export default function ChatPanel({
               <button 
                 onClick={onSendMessage}
                 disabled={isGenerating || !currentMessage.trim()}
-                className="font-silkscreen text-sm font-bold text-white uppercase bg-blue-600 border-2 border-blue-800 shadow-[2px_2px_0_#1e40af] px-4 py-2 hover:bg-blue-500 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#1e40af] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="font-silkscreen text-sm font-bold text-white uppercase bg-violet-600 border-2 border-violet-800 shadow-[2px_2px_0_#581c87] px-4 py-2 hover:bg-violet-500 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#581c87] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Send className="h-3 w-3" />
               </button>

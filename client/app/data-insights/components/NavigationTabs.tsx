@@ -33,7 +33,7 @@ export default function NavigationTabs({
               className={cn(
                 "font-silkscreen text-xs font-bold uppercase px-4 py-2 border-2 min-w-24 items-center justify-center shadow-[2px_2px_0_#374151] transition-all",
                 isActive
-                  ? "bg-violet-100 border-violet-600 text-violet-800 shadow-[2px_2px_0_#1e40af]"
+                  ? "bg-violet-100 border-violet-600 text-violet-800 shadow-[2px_2px_0_#581c87]"
                   : "bg-gray-100 border-gray-600 text-gray-800 hover:bg-gray-200 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#374151]"
               )}
               onClick={() => onTabChange(tab.id)}
