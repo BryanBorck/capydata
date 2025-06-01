@@ -1,4 +1,4 @@
-# 🦫 Datagotchi - Learn, Earn & Train AI with Your Personal Capybara
+# CapyData - Learn, Earn & Train AI with Your Personal Capybara
 
 <div align="center">
   <img src="client/public/capybara/variants/default-capybara.png" alt="Datagotchi Capybara" width="200"/>
