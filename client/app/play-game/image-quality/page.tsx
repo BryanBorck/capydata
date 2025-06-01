@@ -490,7 +490,7 @@ export default function ImageQualityGamePage() {
                   CHOOSE THE HIGHEST QUALITY IMAGE
                 </div>
                 <div className="font-silkscreen text-xs text-gray-600 uppercase mb-2">
-                  Prompt: "{roundsData[currentRound]?.prompt}"
+                  Prompt: &quot;{roundsData[currentRound]?.prompt}&quot;
                 </div>
                 <div className="font-silkscreen text-xs text-blue-600 uppercase">
                   🎨 Same prompt, different AI models/settings - Pick the best quality!

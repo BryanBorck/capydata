@@ -8,6 +8,7 @@ export interface UserData {
   wallet_address: string
   username: string
   points: number
+  studio_unlocked: boolean
   created_at: string
 }
 
@@ -105,6 +106,7 @@ export async function createUserSession(walletAddress: string, username?: string
       wallet_address: profile.wallet_address,
       username: profile.username,
       points: profile.points,
+      studio_unlocked: profile.studio_unlocked,
       created_at: profile.created_at
     }
   } catch (error) {

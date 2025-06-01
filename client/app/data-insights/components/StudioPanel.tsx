@@ -1,8 +1,10 @@
 "use client";
 
-import { Sparkles, BookOpen, FileText, MessageCircle, Target, Loader2, Copy, X, Info } from "lucide-react";
+import { Sparkles, BookOpen, FileText, MessageCircle, Target, Loader2, Copy, X, Info, Lock, Coins } from "lucide-react";
 import { toast } from "sonner";
 import { Knowledge, KnowledgeSummary, GeneratedContent } from "../types";
+import { useUser } from "@/providers/user-provider";
+import { useState } from "react";
 
 interface StudioPanelProps {
   petKnowledge: Knowledge[];
@@ -22,10 +24,105 @@ export default function StudioPanel({
   onSetGeneratedContent
 }: StudioPanelProps) {
   
+  const { user, purchaseStudioUnlock } = useUser();
+  const [isPurchasing, setIsPurchasing] = useState(false);
+  
   const copyMessage = (content: string) => {
     navigator.clipboard.writeText(content);
     toast.success("Copied to clipboard!");
   };
+
+  const handlePurchaseStudio = async () => {
+    setIsPurchasing(true);
+    try {
+      const success = await purchaseStudioUnlock();
+      if (success) {
+        // The success message is already shown by the purchaseStudioUnlock function
+      }
+    } catch (error) {
+      console.error('Error purchasing studio unlock:', error);
+    } finally {
+      setIsPurchasing(false);
+    }
+  };
+
+  // Show locked state if user hasn't unlocked studio
+  if (!user?.studio_unlocked) {
+    return (
+      <div className="h-full overflow-auto px-6 py-6 pb-16">
+        <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-8 relative">
+          <div className="text-center">
+            <div className="mb-6">
+              <Lock className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+              <div className="font-silkscreen text-xl font-bold text-gray-800 uppercase mb-2">
+                STUDIO LOCKED
+              </div>
+              <div className="font-silkscreen text-sm text-gray-600 uppercase">
+                UNLOCK ADVANCED AI CONTENT GENERATION
+              </div>
+            </div>
+            
+            <div className="bg-gray-50 border-2 border-gray-600 shadow-[2px_2px_0_#374151] p-6 mb-6">
+              <div className="font-silkscreen text-sm font-bold text-gray-800 uppercase mb-4">
+                STUDIO FEATURES
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-left">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-blue-600" />
+                  <span className="font-silkscreen text-xs text-gray-700 uppercase">Study Guides</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-green-600" />
+                  <span className="font-silkscreen text-xs text-gray-700 uppercase">Briefing Docs</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MessageCircle className="h-4 w-4 text-purple-600" />
+                  <span className="font-silkscreen text-xs text-gray-700 uppercase">FAQ Generation</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Target className="h-4 w-4 text-orange-600" />
+                  <span className="font-silkscreen text-xs text-gray-700 uppercase">Timelines</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <div className="font-silkscreen text-lg font-bold text-yellow-700 uppercase mb-2">
+                UNLOCK COST: 150 POINTS
+              </div>
+              <div className="font-silkscreen text-sm text-gray-600 uppercase">
+                YOUR POINTS: {user?.points || 0}
+              </div>
+            </div>
+            
+            {user && user.points >= 150 ? (
+              <button 
+                onClick={handlePurchaseStudio}
+                disabled={isPurchasing}
+                className="font-silkscreen text-sm font-bold text-white uppercase bg-yellow-500 border-2 border-yellow-700 shadow-[4px_4px_0_#92400e] px-8 py-4 hover:bg-yellow-400 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[3px_3px_0_#92400e] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 mx-auto"
+              >
+                {isPurchasing ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-5 w-5" />
+                )}
+                {isPurchasing ? 'PURCHASING...' : 'UNLOCK STUDIO'}
+              </button>
+            ) : (
+              <div className="text-center">
+                <div className="font-silkscreen text-sm text-red-600 uppercase mb-4">
+                  INSUFFICIENT POINTS
+                </div>
+                <div className="font-silkscreen text-xs text-gray-600 uppercase">
+                  EARN MORE POINTS BY PLAYING GAMES AND ADDING KNOWLEDGE
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full overflow-auto px-6 py-6 pb-16">

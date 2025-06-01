@@ -1,9 +1,11 @@
 "use client"
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from 'react'
 import { AuthState, UserData, createUserSession, deleteAccount as deleteUserAccount, getProfileByWallet } from '@/lib/services/auth'
 import { getPetsByOwner } from '@/lib/services/pets'
 import { Database } from '@/lib/types/database'
+import { supabase } from '@/lib/supabase/client'
+import { toast } from 'sonner'
 
 type Pet = Database['public']['Tables']['pets']['Row']
 
@@ -15,6 +17,7 @@ interface UserContextType extends AuthState {
   deleteAccount: () => Promise<void>
   refreshUserData: () => Promise<void>
   setActivePet: (pet: Pet) => void
+  purchaseStudioUnlock: () => Promise<boolean>
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined)
@@ -52,14 +55,15 @@ export function UserProvider({ children }: UserProviderProps) {
           setUser(userData)
           
           // Check if user data has points field, if not, refresh it
-          if (userData.points === undefined) {
-            console.log('User data missing points field, refreshing...')
+          if (userData.points === undefined || userData.studio_unlocked === undefined) {
+            console.log('User data missing fields, refreshing...')
             const profile = await getProfileByWallet(userData.wallet_address)
             if (profile) {
               const updatedUserData: UserData = {
                 wallet_address: profile.wallet_address,
                 username: profile.username,
                 points: profile.points,
+                studio_unlocked: profile.studio_unlocked,
                 created_at: profile.created_at
               }
               setUser(updatedUserData)
@@ -156,6 +160,7 @@ export function UserProvider({ children }: UserProviderProps) {
           wallet_address: profile.wallet_address,
           username: profile.username,
           points: profile.points,
+          studio_unlocked: profile.studio_unlocked,
           created_at: profile.created_at
         }
         setUser(updatedUserData)
@@ -205,6 +210,67 @@ export function UserProvider({ children }: UserProviderProps) {
     }
   }
 
+  // Purchase studio unlock
+  const purchaseStudioUnlock = async (): Promise<boolean> => {
+    if (!user) {
+      toast.error('Please log in to purchase studio unlock')
+      return false
+    }
+    
+    const STUDIO_UNLOCK_COST = 150
+    
+    try {
+      // Check if user already has studio unlocked
+      if (user.studio_unlocked) {
+        toast.info('Studio is already unlocked!')
+        return true
+      }
+      
+      // Check if user has enough points
+      if (user.points < STUDIO_UNLOCK_COST) {
+        toast.error(`Insufficient points! You need ${STUDIO_UNLOCK_COST} points but only have ${user.points}`)
+        return false
+      }
+      
+      // Perform the transaction: deduct points and unlock studio
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({
+          points: user.points - STUDIO_UNLOCK_COST,
+          studio_unlocked: true
+        })
+        .eq('wallet_address', user.wallet_address)
+        .select()
+        .single()
+      
+      if (error) {
+        console.error('Error purchasing studio unlock:', error)
+        toast.error('Failed to purchase studio unlock. Please try again.')
+        return false
+      }
+      
+      // Update local user state
+      const updatedUserData: UserData = {
+        wallet_address: data.wallet_address,
+        username: data.username,
+        points: data.points,
+        studio_unlocked: data.studio_unlocked,
+        created_at: data.created_at
+      }
+      
+      setUser(updatedUserData)
+      localStorage.setItem('datagotchi_user', JSON.stringify(updatedUserData))
+      
+      toast.success(`Studio unlocked! ${STUDIO_UNLOCK_COST} points deducted.`)
+      return true
+      
+    } catch (error) {
+      console.error('Error purchasing studio unlock:', error)
+      toast.error('Failed to purchase studio unlock. Please try again.')
+      return false
+    }
+  }
+
   const value: UserContextType = {
     user,
     pets,
@@ -215,7 +281,8 @@ export function UserProvider({ children }: UserProviderProps) {
     logout,
     deleteAccount,
     refreshUserData,
-    setActivePet
+    setActivePet,
+    purchaseStudioUnlock
   }
 
   return (
