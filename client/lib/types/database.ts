@@ -14,18 +14,21 @@ export type Database = {
           wallet_address: string
           username: string
           points: number
+          studio_unlocked: boolean
           created_at: string
         }
         Insert: {
           wallet_address: string
           username: string
           points?: number
+          studio_unlocked?: boolean
           created_at?: string
         }
         Update: {
           wallet_address?: string
           username?: string
           points?: number
+          studio_unlocked?: boolean
           created_at?: string
         }
         Relationships: []

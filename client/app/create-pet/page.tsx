@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowRight, Loader2, Sparkles, Dice1, CheckCircle, ArrowLeft, Trophy, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight, Loader2, Sparkles, Dice1, CheckCircle, ArrowLeft, Trophy, ChevronLeft, ChevronRight, Coins, Lock } from "lucide-react";
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 import { useRouter } from "next/navigation";
 import { Toaster } from "@/components/ui/sonner";
@@ -11,6 +11,7 @@ import { createPet } from "@/lib/services/pets";
 import { APP_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { supabase } from "@/lib/supabase/client";
 
 // Available variants
 const CAPYBARA_VARIANTS = [
@@ -88,14 +89,16 @@ const LazyImage = ({
 };
 
 export default function CreatePetPage() {
-  const [step, setStep] = useState(1); // 1: name, 2: variant, 3: background, 4: success
+  const [step, setStep] = useState(0); // 0: payment, 1: name, 2: variant, 3: background, 4: success
   const [petName, setPetName] = useState("");
   const [selectedVariant, setSelectedVariant] = useState('default');
   const [selectedBackground, setSelectedBackground] = useState('forest');
   const [isCreating, setIsCreating] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
   const router = useRouter();
   
   const { user, isAuthenticated, refreshUserData, setActivePet } = useUser();
+  const PET_CREATION_COST = 1000;
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -103,6 +106,50 @@ export default function CreatePetPage() {
       router.push('/login');
     }
   }, [isAuthenticated, router]);
+
+  const handlePayment = async () => {
+    if (!user) {
+      toast.error('Please log in to create a pet');
+      return;
+    }
+
+    if (user.points < PET_CREATION_COST) {
+      toast.error(`Insufficient points! You need ${PET_CREATION_COST} points but only have ${user.points}`);
+      return;
+    }
+
+    setIsPaying(true);
+
+    try {
+      // Deduct points from user account
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({
+          points: user.points - PET_CREATION_COST
+        })
+        .eq('wallet_address', user.wallet_address)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error deducting points for pet creation:', error);
+        toast.error('Failed to process payment. Please try again.');
+        return;
+      }
+
+      // Update local user state
+      await refreshUserData();
+      
+      toast.success(`${PET_CREATION_COST} points deducted. Let's create your pet!`);
+      setStep(1); // Move to name selection step
+
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      toast.error('Failed to process payment. Please try again.');
+    } finally {
+      setIsPaying(false);
+    }
+  };
 
   const handleCreatePet = async () => {
     if (!user) return;
@@ -162,13 +209,16 @@ export default function CreatePetPage() {
   };
 
   const prevStep = () => {
-    if (step > 1) {
+    if (step > 0) {
       setStep(step - 1);
+    } else if (step === 0) {
+      router.push('/home');
     }
   };
 
   const getStepTitle = () => {
     switch (step) {
+      case 0: return "CREATE NEW PET";
       case 1: return "NAME YOUR PET";
       case 2: return "CHOOSE STYLE";
       case 3: return "PICK BACKGROUND";
@@ -179,6 +229,7 @@ export default function CreatePetPage() {
 
   const getStepSubtitle = () => {
     switch (step) {
+      case 0: return "PAY TO START PET CREATION";
       case 1: return "GIVE YOUR COMPANION A NAME";
       case 2: return "SELECT YOUR CAPYBARA VARIANT";
       case 3: return "CHOOSE YOUR PET'S HOME";
@@ -207,8 +258,8 @@ export default function CreatePetPage() {
       <header className="relative z-10 px-3 py-2 bg-gradient-to-r from-violet-500 to-violet-600 border-1 border-violet-800 shadow-[1px_1px_0_#581c87]">
         <div className="flex items-center justify-between">
           <button
-            onClick={() => step === 1 ? router.push('/home') : prevStep()}
-            disabled={isCreating}
+            onClick={() => step === 0 ? router.push('/home') : prevStep()}
+            disabled={isCreating || isPaying}
             className="font-silkscreen text-xs font-bold text-white uppercase bg-violet-700 border-2 border-violet-900 shadow-[2px_2px_0_#581c87] px-3 py-1 hover:bg-violet-600 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#581c87] transition-all flex items-center gap-2 disabled:opacity-50"
           >
             <ArrowLeft className="h-3 w-3" />
@@ -313,7 +364,7 @@ export default function CreatePetPage() {
             
             {/* Step indicator */}
             <div className="flex items-center justify-center mt-4 space-x-2">
-              {[1, 2, 3].map((i) => (
+              {[0, 1, 2, 3].map((i) => (
                 <div
                   key={i}
                   className={cn(
@@ -329,6 +380,89 @@ export default function CreatePetPage() {
           <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-6 w-full max-w-2xl">
             <div className="space-y-6">
               
+              {/* Step 0: Payment Screen */}
+              {step === 0 && (
+                <div className="space-y-6">
+                  <div className="text-center">
+                    <div className="mb-6">
+                      <div className="font-silkscreen text-xl font-bold text-gray-800 uppercase mb-2">
+                        CREATE NEW PET
+                      </div>
+                      <div className="font-silkscreen text-sm text-gray-600 uppercase">
+                        BRING YOUR DIGITAL COMPANION TO LIFE
+                      </div>
+                    </div>
+                    
+                    {/* Features Preview */}
+                    <div className="bg-gray-50 border-2 border-gray-600 shadow-[2px_2px_0_#374151] p-4 mb-6">
+                      <div className="font-silkscreen text-sm font-bold text-gray-800 uppercase mb-4">
+                        YOUR PET WILL HAVE
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 text-left">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-violet-500"></div>
+                          <span className="font-silkscreen text-xs text-gray-700 uppercase">Custom Name</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-blue-500"></div>
+                          <span className="font-silkscreen text-xs text-gray-700 uppercase">Unique Style</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-green-500"></div>
+                          <span className="font-silkscreen text-xs text-gray-700 uppercase">Home Background</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-orange-500"></div>
+                          <span className="font-silkscreen text-xs text-gray-700 uppercase">Skill System</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Cost Display */}
+                    <div className="mb-6">
+                      <div className="font-silkscreen text-lg font-bold text-violet-700 uppercase mb-2 flex items-center justify-center gap-2">
+                        <Coins className="h-5 w-5" />
+                        COST: {PET_CREATION_COST} POINTS
+                      </div>
+                      <div className="font-silkscreen text-sm text-gray-600 uppercase">
+                        YOUR POINTS: {user?.points || 0}
+                      </div>
+                    </div>
+                    
+                    {/* Payment Button or Insufficient Points */}
+                    {user && user.points >= PET_CREATION_COST ? (
+                      <button 
+                        onClick={handlePayment}
+                        disabled={isPaying}
+                        className="font-silkscreen text-sm font-bold text-white uppercase bg-violet-500 border-2 border-violet-700 shadow-[4px_4px_0_#4c1d95] px-8 py-4 hover:bg-violet-400 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[3px_3px_0_#4c1d95] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 mx-auto"
+                      >
+                        {isPaying ? (
+                          <>
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            PROCESSING...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-5 w-5" />
+                            PAY & START CREATING
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <div className="text-center">
+                        <div className="font-silkscreen text-sm text-red-600 uppercase mb-4 flex items-center justify-center gap-2">
+                          <Lock className="h-4 w-4" />
+                          INSUFFICIENT POINTS
+                        </div>
+                        <div className="font-silkscreen text-xs text-gray-600 uppercase">
+                          EARN MORE POINTS BY PLAYING GAMES
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Step 1: Name Input */}
               {step === 1 && (
                 <div className="space-y-4">
@@ -467,7 +601,10 @@ export default function CreatePetPage() {
             
             <div className="flex-1" />
 
-            {step < 3 ? (
+            {step === 0 ? (
+              // Payment step - no next button needed (handled by payment button)
+              null
+            ) : step < 3 ? (
               <button
                 onClick={nextStep}
                 disabled={step === 1 && petName.trim().length < 2}
