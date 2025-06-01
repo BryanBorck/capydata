@@ -2,13 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Globe, Trophy, X, Star, HelpCircle, Home, RotateCcw } from "lucide-react";
+import { ArrowLeft, Globe, Trophy, X, Star, HelpCircle, Home, RotateCcw, TrendingUp, Award, Target } from "lucide-react";
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 import { useUser } from "@/providers/user-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { getGameConfig } from "../game-config";
 import { useGameRewards } from "@/lib/hooks/use-game-rewards";
+import { 
+  getLanguageProgress, 
+  generatePersonalizedFlashcards, 
+  completeFlashcardSession,
+  formatExperienceToNextLevel,
+  getDifficultyColor,
+  type LanguageProgress,
+  type EnhancedFlashcardResponse
+} from "@/lib/services/language-progress";
 
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -27,26 +36,11 @@ interface FlashcardResponse {
   tokens_used?: number;
 }
 
-// API utility function
-async function generateFlashcards(language: string, difficulty: string = 'beginner', count: number = 5): Promise<FlashcardResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/ai/generate-flashcards`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      language,
-      difficulty,
-      count
-    }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-    throw new Error(errorData.detail || 'Failed to generate flashcards');
-  }
-
-  return response.json();
+// Types for flashcard game
+interface FlashcardAnswer {
+  is_correct: boolean;
+  time_taken: number;
+  selected_answer: string;
 }
 
 export default function LanguageFlashcardsGamePage() {
@@ -56,13 +50,20 @@ export default function LanguageFlashcardsGamePage() {
   const [isComplete, setIsComplete] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<string>('');
-  const [flashcards, setFlashcards] = useState<AIFlashcard[]>([]);
+  const [flashcards, setFlashcards] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const [showHelp, setShowHelp] = useState(false);
   
+  // New state for user progress tracking
+  const [userProgress, setUserProgress] = useState<LanguageProgress | null>(null);
+  const [sessionAnswers, setSessionAnswers] = useState<FlashcardAnswer[]>([]);
+  const [sessionStartTime, setSessionStartTime] = useState<number>(0);
+  const [questionStartTime, setQuestionStartTime] = useState<number>(0);
+  const [isProgressLoading, setIsProgressLoading] = useState(false);
+  
   const router = useRouter();
-  const { isAuthenticated } = useUser();
+  const { user, isAuthenticated } = useUser();
 
   // Get game configuration
   const gameConfig = getGameConfig('language-flashcards');
@@ -103,33 +104,60 @@ export default function LanguageFlashcardsGamePage() {
   }
 
   const handleLanguageSelect = async (language: string) => {
+    if (!user?.wallet_address) {
+      toast.error("User wallet address not found");
+      return;
+    }
+
     setSelectedLanguage(language);
     setCurrentCard(0);
     setScore(0);
     setError('');
     setIsLoading(true);
+    setIsProgressLoading(true);
+    setSessionAnswers([]);
+    setSessionStartTime(Date.now());
     
     try {
-      const response = await generateFlashcards(language, 'beginner', totalCards);
+      // Get user progress for this language
+      const progress = await getLanguageProgress(user.wallet_address, language);
+      setUserProgress(progress);
+      
+      // Generate personalized flashcards based on user progress
+      const response = await generatePersonalizedFlashcards(language, user.wallet_address, totalCards);
       setFlashcards(response.flashcards);
-      toast.success(`Generated ${response.flashcards.length} flashcards for ${language}!`);
+      setQuestionStartTime(Date.now());
+      
+      toast.success(`Generated ${response.flashcards.length} personalized ${language} flashcards!`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to generate flashcards';
       setError(errorMessage);
       toast.error(`Failed to generate flashcards: ${errorMessage}`);
     } finally {
       setIsLoading(false);
+      setIsProgressLoading(false);
     }
   };
 
   const handleAnswerSelect = (answer: string) => {
     if (selectedAnswer !== '' || isLoading) return;
     
+    const answerTime = Date.now();
+    const timeTaken = Math.max(1, Math.floor((answerTime - questionStartTime) / 1000)); // At least 1 second
+    
     setSelectedAnswer(answer);
     setShowFeedback(true);
     
     const card = flashcards[currentCard];
     const isCorrect = answer === card.translation;
+    
+    // Record the answer
+    const answerData: FlashcardAnswer = {
+      is_correct: isCorrect,
+      time_taken: timeTaken,
+      selected_answer: answer
+    };
+    setSessionAnswers(prev => [...prev, answerData]);
     
     if (isCorrect) {
       setScore(score + 20);
@@ -142,11 +170,54 @@ export default function LanguageFlashcardsGamePage() {
         setCurrentCard(currentCard + 1);
         setSelectedAnswer('');
         setShowFeedback(false);
+        setQuestionStartTime(Date.now());
       } else {
-        setIsComplete(true);
-        toast.success(`Language practice complete! You earned ${score + (isCorrect ? 20 : 5)} points!`);
+        handleSessionComplete(answerData);
       }
     }, 2000);
+  };
+
+  const handleSessionComplete = async (finalAnswer: FlashcardAnswer) => {
+    if (!user?.wallet_address || !selectedLanguage) return;
+    
+    const allAnswers = [...sessionAnswers, finalAnswer];
+    const sessionDuration = Math.floor((Date.now() - sessionStartTime) / 1000);
+    const finalScore = score + (finalAnswer.is_correct ? 20 : 5);
+    
+    try {
+      // Submit session data to backend
+      const sessionData = {
+        wallet_address: user.wallet_address,
+        language: selectedLanguage,
+        difficulty: userProgress?.current_difficulty || 'beginner',
+        flashcards_data: flashcards,
+        answers_data: allAnswers,
+        total_points: finalScore,
+        duration_seconds: sessionDuration
+      };
+      
+      const result = await completeFlashcardSession(sessionData);
+      
+      // Update local progress state
+      if (result.progress_updated) {
+        const updatedProgress = await getLanguageProgress(user.wallet_address, selectedLanguage);
+        setUserProgress(updatedProgress);
+        
+        if (result.new_level) {
+          toast.success(`🎉 Level up! You're now level ${result.new_level}!`);
+        }
+        if (result.new_difficulty && result.new_difficulty !== userProgress?.current_difficulty) {
+          toast.success(`📈 Difficulty increased to ${result.new_difficulty}!`);
+        }
+      }
+      
+      setIsComplete(true);
+      toast.success(`Session complete! You learned ${result.words_learned} words with ${Math.round(result.accuracy_rate)}% accuracy!`);
+    } catch (error) {
+      console.error('Failed to complete session:', error);
+      toast.error('Failed to save session progress');
+      setIsComplete(true); // Still complete the game even if tracking fails
+    }
   };
 
   const handlePlayAgain = () => {
@@ -158,6 +229,10 @@ export default function LanguageFlashcardsGamePage() {
     setSelectedAnswer('');
     setFlashcards([]);
     setError('');
+    setUserProgress(null);
+    setSessionAnswers([]);
+    setSessionStartTime(0);
+    setQuestionStartTime(0);
     resetRewards();
   };
 
@@ -230,6 +305,12 @@ export default function LanguageFlashcardsGamePage() {
                   REWARDS: {gameConfig.rewards.display}
                 </div>
               </div>
+              
+              <div className="bg-blue-100 border-2 border-blue-600 shadow-[2px_2px_0_#1e3a8a] p-3">
+                <div className="font-silkscreen text-xs font-bold text-blue-800 uppercase">
+                  ✨ PERSONALIZED LEARNING WITH PROGRESS TRACKING!
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -238,6 +319,73 @@ export default function LanguageFlashcardsGamePage() {
       {/* Main Content */}
       <div className="relative z-10 h-full overflow-y-auto px-6 py-8">
         <div className="max-w-2xl mx-auto space-y-6">
+          
+          {/* User Progress Display - Show when language is selected and we have progress */}
+          {selectedLanguage && userProgress && !isProgressLoading && (
+            <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="font-silkscreen text-sm font-bold text-gray-800 uppercase">
+                  {selectedLanguage} Progress
+                </div>
+                <div className={`px-2 py-1 border-2 shadow-[1px_1px_0_#374151] ${getDifficultyColor(userProgress.current_difficulty)}`}>
+                  <div className="font-silkscreen text-xs font-bold uppercase">
+                    {userProgress.current_difficulty}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-4 gap-3">
+                <div className="text-center">
+                  <div className="font-silkscreen text-lg font-bold text-gray-800">
+                    {userProgress.level}
+                  </div>
+                  <div className="font-silkscreen text-xs text-gray-600 uppercase">
+                    Level
+                  </div>
+                </div>
+                
+                <div className="text-center">
+                  <div className="font-silkscreen text-sm font-bold text-blue-600">
+                    {formatExperienceToNextLevel(userProgress.experience_points).progress}%
+                  </div>
+                  <div className="font-silkscreen text-xs text-gray-600 uppercase">
+                    To Next
+                  </div>
+                </div>
+                
+                <div className="text-center">
+                  <div className="font-silkscreen text-sm font-bold text-green-600">
+                    {userProgress.total_words_learned}
+                  </div>
+                  <div className="font-silkscreen text-xs text-gray-600 uppercase">
+                    Words
+                  </div>
+                </div>
+                
+                <div className="text-center">
+                  <div className="font-silkscreen text-sm font-bold text-purple-600">
+                    {userProgress.current_streak}
+                  </div>
+                  <div className="font-silkscreen text-xs text-gray-600 uppercase">
+                    Streak
+                  </div>
+                </div>
+              </div>
+              
+              {/* XP Progress Bar */}
+              <div className="mt-4">
+                <div className="bg-gray-200 border-2 border-gray-400 shadow-[1px_1px_0_#374151] h-3 overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-blue-400 to-blue-600 transition-all duration-500"
+                    style={{ width: `${formatExperienceToNextLevel(userProgress.experience_points).progress}%` }}
+                  />
+                </div>
+                <div className="font-silkscreen text-xs text-gray-600 uppercase mt-1 text-center">
+                  {formatExperienceToNextLevel(userProgress.experience_points).current} / 100 XP
+                </div>
+              </div>
+            </div>
+          )}
           
           {selectedLanguage && flashcards.length > 0 && !isComplete && !showFeedback && (
             /* Stats Cards Row */
@@ -308,48 +456,121 @@ export default function LanguageFlashcardsGamePage() {
             </div>
           ) : isComplete ? (
             /* Completion Screen */
-            <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-8 text-center">
-              <div className="p-4 border-2 border-gray-600 shadow-[2px_2px_0_#374151] bg-yellow-100 border-yellow-600 text-yellow-800 inline-block mb-6">
-                <Globe className="h-12 w-12" />
-              </div>
-              
-              <div className="font-silkscreen text-xl font-bold text-gray-800 uppercase mb-3">
-                LANGUAGE PRACTICE COMPLETE!
-              </div>
-              <div className="font-silkscreen text-sm text-gray-600 uppercase mb-6">
-                YOU EARNED {score} POINTS LEARNING {selectedLanguage}!
-              </div>
-              
-              <div className="space-y-4">
-                {/* Navigation Buttons */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <button
-                    onClick={() => router.push('/')}
-                    className="font-silkscreen text-xs font-bold text-white uppercase bg-green-600 border-2 border-green-800 shadow-[2px_2px_0_#14532d] px-4 py-2 hover:bg-green-500 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#14532d] transition-all flex items-center justify-center gap-2"
-                  >
-                    <Home className="h-3 w-3" />
-                    HOME
-                  </button>
+            <div className="space-y-6">
+              {/* Progress Update Results */}
+              {userProgress && (
+                <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="font-silkscreen text-lg font-bold text-gray-800 uppercase">
+                      {selectedLanguage} Session Results
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Award className="h-5 w-5 text-yellow-600" />
+                      <div className="font-silkscreen text-sm font-bold text-yellow-800 uppercase">
+                        Level {userProgress.level}
+                      </div>
+                    </div>
+                  </div>
                   
-                  <button
-                    onClick={() => router.push('/play-game')}
-                    className="font-silkscreen text-xs font-bold text-white uppercase bg-blue-600 border-2 border-blue-800 shadow-[2px_2px_0_#1e3a8a] px-4 py-2 hover:bg-blue-500 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#1e3a8a] transition-all flex items-center justify-center gap-2"
-                  >
-                    <RotateCcw className="h-3 w-3" />
-                    NEW GAME
-                  </button>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="bg-green-100 border-2 border-green-600 shadow-[2px_2px_0_#14532d] p-3 text-center">
+                      <div className="font-silkscreen text-lg font-bold text-green-800">
+                        {Math.round((sessionAnswers.filter(a => a.is_correct).length / sessionAnswers.length) * 100)}%
+                      </div>
+                      <div className="font-silkscreen text-xs text-green-700 uppercase">
+                        Accuracy
+                      </div>
+                    </div>
+                    
+                    <div className="bg-blue-100 border-2 border-blue-600 shadow-[2px_2px_0_#1e3a8a] p-3 text-center">
+                      <div className="font-silkscreen text-lg font-bold text-blue-800">
+                        {userProgress.current_streak}
+                      </div>
+                      <div className="font-silkscreen text-xs text-blue-700 uppercase">
+                        Streak
+                      </div>
+                    </div>
+                  </div>
                   
-                  <button
-                    onClick={handlePlayAgain}
-                    className="font-silkscreen text-xs font-bold text-white uppercase bg-green-600 border-2 border-green-800 shadow-[2px_2px_0_#14532d] px-4 py-2 hover:bg-green-500 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#14532d] transition-all flex items-center justify-center gap-2"
-                  >
-                    <Trophy className="h-3 w-3" />
-                    PLAY AGAIN
-                  </button>
+                  {/* XP Progress Bar */}
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="font-silkscreen text-xs text-gray-600 uppercase">
+                        Experience Progress
+                      </div>
+                      <div className="font-silkscreen text-xs text-gray-600 uppercase">
+                        {formatExperienceToNextLevel(userProgress.experience_points).current} / 100 XP
+                      </div>
+                    </div>
+                    <div className="bg-gray-200 border-2 border-gray-400 shadow-[1px_1px_0_#374151] h-4 overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-blue-400 to-blue-600 transition-all duration-1000"
+                        style={{ width: `${formatExperienceToNextLevel(userProgress.experience_points).progress}%` }}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-center gap-4 text-center">
+                    <div className="flex items-center gap-2">
+                      <Target className="h-4 w-4 text-purple-600" />
+                      <div className="font-silkscreen text-xs text-purple-800 uppercase">
+                        {userProgress.total_words_learned} Words Learned
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-orange-600" />
+                      <div className={`font-silkscreen text-xs uppercase px-2 py-1 border ${getDifficultyColor(userProgress.current_difficulty)}`}>
+                        {userProgress.current_difficulty}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <div className="bg-white border-4 border-gray-800 shadow-[8px_8px_0_#374151] p-8 text-center">
+                <div className="p-4 border-2 border-gray-600 shadow-[2px_2px_0_#374151] bg-yellow-100 border-yellow-600 text-yellow-800 inline-block mb-6">
+                  <Globe className="h-12 w-12" />
                 </div>
                 
-                <div className="font-silkscreen text-xs text-green-700 uppercase font-bold">
-                  {rewardsAwarded ? "✓ " : ""}REWARDS: {gameConfig.rewards.display}
+                <div className="font-silkscreen text-xl font-bold text-gray-800 uppercase mb-3">
+                  LANGUAGE PRACTICE COMPLETE!
+                </div>
+                <div className="font-silkscreen text-sm text-gray-600 uppercase mb-6">
+                  YOU EARNED {score} POINTS LEARNING {selectedLanguage}!
+                </div>
+                
+                <div className="space-y-4">
+                  {/* Navigation Buttons */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <button
+                      onClick={() => router.push('/')}
+                      className="font-silkscreen text-xs font-bold text-white uppercase bg-green-600 border-2 border-green-800 shadow-[2px_2px_0_#14532d] px-4 py-2 hover:bg-green-500 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#14532d] transition-all flex items-center justify-center gap-2"
+                    >
+                      <Home className="h-3 w-3" />
+                      HOME
+                    </button>
+                    
+                    <button
+                      onClick={() => router.push('/play-game')}
+                      className="font-silkscreen text-xs font-bold text-white uppercase bg-blue-600 border-2 border-blue-800 shadow-[2px_2px_0_#1e3a8a] px-4 py-2 hover:bg-blue-500 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#1e3a8a] transition-all flex items-center justify-center gap-2"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      NEW GAME
+                    </button>
+                    
+                    <button
+                      onClick={handlePlayAgain}
+                      className="font-silkscreen text-xs font-bold text-white uppercase bg-green-600 border-2 border-green-800 shadow-[2px_2px_0_#14532d] px-4 py-2 hover:bg-green-500 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0_#14532d] transition-all flex items-center justify-center gap-2"
+                    >
+                      <Trophy className="h-3 w-3" />
+                      PLAY AGAIN
+                    </button>
+                  </div>
+                  
+                  <div className="font-silkscreen text-xs text-green-700 uppercase font-bold">
+                    {rewardsAwarded ? "✓ " : ""}REWARDS: {gameConfig.rewards.display}
+                  </div>
                 </div>
               </div>
             </div>
@@ -361,7 +582,7 @@ export default function LanguageFlashcardsGamePage() {
                   CHOOSE A LANGUAGE TO PRACTICE
                 </div>
                 <div className="font-silkscreen text-xs text-gray-600 uppercase">
-                  AI WILL GENERATE PERSONALIZED FLASHCARDS FOR YOU!
+                  CAPY WILL GENERATE PERSONALIZED FLASHCARDS FOR YOU!
                 </div>
               </div>
               
@@ -377,9 +598,6 @@ export default function LanguageFlashcardsGamePage() {
                       <div className="font-silkscreen text-sm font-bold text-green-800 uppercase mb-1">
                         {language}
                       </div>
-                      <div className="px-2 py-1 border-2 border-blue-600 shadow-[1px_1px_0_#1e3a8a] bg-blue-100 text-blue-700 font-silkscreen text-xs font-bold uppercase">
-                        AI GENERATED
-                      </div>
                     </button>
                   ))}
                 </div>
@@ -390,7 +608,7 @@ export default function LanguageFlashcardsGamePage() {
                   <div className="flex items-center gap-2">
                     <Star className="h-4 w-4 text-blue-600" />
                     <div className="font-silkscreen text-xs font-bold text-blue-800 uppercase">
-                      POWERED BY OPENAI - UNIQUE VOCABULARY EACH SESSION!
+                      UNIQUE VOCABULARY EACH SESSION!
                     </div>
                   </div>
                 </div>
