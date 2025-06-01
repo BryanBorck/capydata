@@ -98,7 +98,7 @@ export default function CreatePetPage() {
   const router = useRouter();
   
   const { user, isAuthenticated, refreshUserData, setActivePet } = useUser();
-  const PET_CREATION_COST = 1000;
+  const PET_CREATION_COST = 20;
 
   // Redirect if not authenticated
   useEffect(() => {
